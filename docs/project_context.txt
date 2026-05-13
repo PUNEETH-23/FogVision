@@ -1,0 +1,1753 @@
+================================================================================
+ADAS PROJECT CONTEXT REPORT
+================================================================================
+
+Generated: 2026-05-07 16:54:16.591879
+OS: Windows 11
+Python: 3.13.1
+
+================================================================================
+GPU INFORMATION
+================================================================================
+Thu May  7 16:54:18 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 591.74                 Driver Version: 591.74         CUDA Version: 13.1     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                  Driver-Model | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 3050 ...  WDDM  |   00000000:01:00.0 Off |                  N/A |
+| N/A   47C    P8             11W /   30W |       0MiB /   4096MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A            3040      C   ...al\Programs\Ollama\ollama.exe      N/A      |
+|    0   N/A  N/A            8684    C+G   ...Chrome\Application\chrome.exe      N/A      |
+|    0   N/A  N/A           20696    C+G   ...Chrome\Application\chrome.exe      N/A      |
++-----------------------------------------------------------------------------------------+
+
+
+================================================================================
+PROJECT STRUCTURE
+================================================================================
+📁 fodvision/
+│   📄 .env
+│   📄 00003.JPG
+│   📄 00017.JPG
+│   📄 00044.JPG
+│   📄 00049.JPG
+│   📄 blackspots.json
+│   📄 DashBoard.py
+│   📄 dehaze.py
+│   📄 Density.py
+│   📄 kaka.png
+│   📄 llm.py
+│   📄 object detect.py
+│   📄 original_caffe_output.jpg.jpeg
+│   📄 project_structure.txt
+│   📄 Requirements.txt
+│   📄 road_context.py
+│   📄 test1_dehazed.jpg.jpeg
+│   📄 test2_dehazed.jpg.jpeg
+│   📄 traffic light.jpg
+│   📄 voice_alert.py
+│   📄 yolov8n.pt
+│   📁 Adonet/
+│   │   📄 AOD_Net.caffemodel
+│   │   📄 ffa.py
+│   │   📄 ffa_test.py
+│   │   📄 its_train_ffa_3_19.pk
+│   │   📄 new.py
+│   │   📄 ots_train_ffa_3_19.pk
+│   │   📄 test.py
+│   │   📄 test_template.prototxt
+│   📁 DehazeFormer/
+│   │   📄 .gitignore
+│   │   📄 LICENSE
+│   │   📄 README.md
+│   │   📄 requirements.txt
+│   │   📄 run.sh
+│   │   📄 test.py
+│   │   📄 train.py
+│   │   📁 configs/
+│   │   │   📁 indoor/
+│   │   │   │   📄 default.json
+│   │   │   │   📄 dehazeformer-b.json
+│   │   │   │   📄 dehazeformer-d.json
+│   │   │   │   📄 dehazeformer-l.json
+│   │   │   │   📄 dehazeformer-m.json
+│   │   │   │   📄 dehazeformer-s.json
+│   │   │   │   📄 dehazeformer-t.json
+│   │   │   │   📄 dehazeformer-w.json
+│   │   │   📁 outdoor/
+│   │   │   │   📄 default.json
+│   │   │   │   📄 dehazeformer-b.json
+│   │   │   │   📄 dehazeformer-m.json
+│   │   │   │   📄 dehazeformer-s.json
+│   │   │   │   📄 dehazeformer-t.json
+│   │   │   📁 reside6k/
+│   │   │   │   📄 default.json
+│   │   │   │   📄 dehazeformer-b.json
+│   │   │   │   📄 dehazeformer-m.json
+│   │   │   │   📄 dehazeformer-s.json
+│   │   │   │   📄 dehazeformer-t.json
+│   │   │   📁 rshaze/
+│   │   │   │   📄 default.json
+│   │   │   │   📄 dehazeformer-b.json
+│   │   │   │   📄 dehazeformer-m.json
+│   │   │   │   📄 dehazeformer-s.json
+│   │   │   │   📄 dehazeformer-t.json
+│   │   📁 datasets/
+│   │   │   📄 loader.py
+│   │   │   📄 __init__.py
+│   │   📁 figs/
+│   │   │   📄 arch.png
+│   │   📁 models/
+│   │   │   📄 dehazeformer.py
+│   │   │   📄 __init__.py
+│   │   📁 outdoor/
+│   │   │   📄 dehazeformer-b.pth
+│   │   │   📄 dehazeformer-m.pth
+│   │   │   📄 dehazeformer-s.pth
+│   │   │   📄 dehazeformer-t.pth
+│   │   📁 utils/
+│   │   │   📄 common.py
+│   │   │   📄 data_parallel.py
+│   │   │   📄 __init__.py
+│   📁 PyFADE/
+│   │   📄 .gitignore
+│   │   📄 LICENSE
+│   │   📄 MANIFEST.in
+│   │   📄 pyproject.toml
+│   │   📄 README.md
+│   │   📄 setup.py
+│   │   📁 src/
+│   │   │   📁 pyfade/
+│   │   │   │   📄 cli.py
+│   │   │   │   📄 core.py
+│   │   │   │   📄 _compat.py
+│   │   │   │   📄 __init__.py
+│   │   │   │   📁 models/
+│   │   │   │   │   📄 matlab_constant_window_lookup.mat
+│   │   │   │   │   📄 natural_fogfree_image_features_ps8.mat
+│   │   │   │   │   📄 natural_foggy_image_features_ps8.mat
+│   │   📁 tests/
+│   │   │   📄 test_pyfade.py
+│   │   │   📁 fixtures/
+│   │   │   │   📄 grid16.png
+│   │   │   │   📄 grid24.png
+│   │   │   │   📄 random32x24.png
+│   │   │   📁 sample_one/
+│   │   │   │   📄 AM_Bing_211.png
+
+================================================================================
+DETECTED IMPORTS
+================================================================================
+from ._compat import (
+from .common import AverageMeter, ListAverageMeter, read_img, write_img, hwc_to_chw, chw_to_hwc
+from .core import FolderResult, fade
+from .core import FolderResult, fade, fade_array, fade_folder, fade_image, load_image
+from .data_parallel import BalancedDataParallel
+from .dehazeformer import dehazeformer_t, dehazeformer_s, dehazeformer_b, dehazeformer_d, dehazeformer_w, dehazeformer_m, dehazeformer_l, DehazeFormer
+from DehazeFormer.models import *
+from PIL import Image
+from __future__ import annotations
+from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from datasets.loader import PairLoader
+from datetime import datetime
+from ffa_test import main
+from functools import lru_cache
+from geopy.distance import geodesic
+from models import *
+from numba import njit
+from pathlib import Path
+from pyfade import FolderResult, fade, fade_array, fade_image, load_image
+from pyfade import fade
+from pyfade._compat import (
+from pyfade.core import (
+from pylab import *
+from pytorch_msssim import ssim
+from scipy import ndimage
+from scipy import ndimage, signal
+from scipy.io import loadmat
+from scipy.linalg import solve
+from setuptools import setup
+from streamlit_folium import st_folium
+from tensorboardX import SummaryWriter
+from timm.models.layers import to_2tuple, trunc_normal_
+from torch.cuda.amp import autocast, GradScaler
+from torch.nn.init import _calculate_fan_in_and_fan_out
+from torch.nn.parallel import DataParallel
+from torch.nn.parallel._functions import Scatter
+from torch.nn.parallel.parallel_apply import parallel_apply
+from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
+from torchvision import transforms
+from tqdm import tqdm
+from tqdm.auto import tqdm
+from typing import Iterable
+from typing import Iterable, Sequence
+from ultralytics import YOLO
+from utils import AverageMeter
+from utils import AverageMeter, write_img, chw_to_hwc
+from utils import hwc_to_chw, read_img
+from { opacity:0; transform:translateY(8px); }
+import argparse
+import caffe
+import copy
+import csv
+import cv2
+import datetime
+import folium
+import json
+import math
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import platform
+import pytest
+import pyttsx3
+import random
+import re
+import requests
+import scipy
+import shutil
+import streamlit as st
+import struct
+import subprocess
+import sys
+import tempfile
+import time
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import turbojpeg
+import zlib
+
+================================================================================
+DETECTED MODELS
+================================================================================
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\yolov8n.pt
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\outdoor\dehazeformer-b.pth
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\outdoor\dehazeformer-m.pth
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\outdoor\dehazeformer-s.pth
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\outdoor\dehazeformer-t.pth
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\distutils-precedence.pth
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\pywin32.pth
+
+================================================================================
+MEDIA FILES
+================================================================================
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\00003.JPG
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\00017.JPG
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\00044.JPG
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\00049.JPG
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\kaka.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\original_caffe_output.jpg.jpeg
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\test1_dehazed.jpg.jpeg
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\test2_dehazed.jpg.jpeg
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\traffic light.jpg
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\figs\arch.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\PyFADE\tests\fixtures\grid16.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\PyFADE\tests\fixtures\grid24.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\PyFADE\tests\fixtures\random32x24.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\PyFADE\tests\sample_one\AM_Bing_211.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\back.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\back_large.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\filesave.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\filesave_large.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\forward.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\forward_large.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\hand.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\help.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\help_large.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\home.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\home_large.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\matplotlib.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\matplotlib_large.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\move.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\move_large.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\qt4_editor_options.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\qt4_editor_options_large.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\subplots.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\subplots_large.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\zoom_to_rect.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\images\zoom_to_rect_large.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\sample_data\grace_hopper.jpg
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\sample_data\logo2.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\matplotlib\mpl-data\sample_data\Minduka_Present_Blue_Pack.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\networkx\drawing\tests\baseline\test_display_complex.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\networkx\drawing\tests\baseline\test_display_empty_graph.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\networkx\drawing\tests\baseline\test_display_house_with_colors.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\networkx\drawing\tests\baseline\test_display_labels_and_colors.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\networkx\drawing\tests\baseline\test_display_shortest_path.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\networkx\drawing\tests\baseline\test_house_with_colors.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\scipy\ndimage\tests\dots.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\streamlit\static\favicon.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\streamlit\static\static\media\balloon-0.Czj7AKwE.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\streamlit\static\static\media\balloon-1.CNvFFrND.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\streamlit\static\static\media\balloon-2.DTvC6B1t.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\streamlit\static\static\media\balloon-3.CgSk4tbL.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\streamlit\static\static\media\balloon-4.mbtFrzxf.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\streamlit\static\static\media\balloon-5.CSwkUfRA.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\streamlit\static\static\media\flake-0.DgWaVvm5.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\streamlit\static\static\media\flake-1.B2r5AHMK.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\streamlit\static\static\media\flake-2.BnWSExPC.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\sympy\plotting\tests\test_region_and.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\sympy\plotting\tests\test_region_not.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\sympy\plotting\tests\test_region_or.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\sympy\plotting\tests\test_region_xor.png
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\ultralytics\assets\bus.jpg
+C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\venv\Lib\site-packages\ultralytics\assets\zidane.jpg
+
+================================================================================
+IMPORTANT FILE PREVIEWS
+================================================================================
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\blackspots.json
+--------------------------------------------------------------------------------
+[
+  {
+    "name": "Yamuna Expressway Zone",
+    "latitude": 28.364,
+    "longitude": 77.533,
+    "severity": "high"
+  },
+  {
+    "name": "NH44 Krishnagiri Curve",
+    "latitude": 12.526,
+    "longitude": 78.214,
+    "severity": "medium"
+  }
+]
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DashBoard.py
+--------------------------------------------------------------------------------
+import streamlit as st
+import folium
+from streamlit_folium import st_folium
+from datetime import datetime
+
+# ─────────────────────────────────────────────
+# PAGE CONFIG
+# ─────────────────────────────────────────────
+st.set_page_config(
+    page_title="ADAS · Phantom Intelligence",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+now = datetime.now()
+current_time = now.strftime("%H:%M")
+current_date = now.strftime("%a, %d %b %Y")
+
+# ─────────────────────────────────────────────
+# FULL STYLESHEET — Rolls-Royce Phantom Spirit
+# ─────────────────────────────────────────────
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@200;300;400;500&family=Rajdhani:wght@300;400;500;600&display=swap');
+
+:root {
+  --rr-black:   #080808;
+  --rr-panel:   #0D0D0D;
+  --rr-surface: #111111;
+  --rr-border:  #2A2218;
+  --rr-gold:    #C9A84C;
+  --rr-gold2:   #E8C97A;
+  --rr-cream:   #F0E6CC;
+  --rr-silver:  #8A8A8A;
+  --rr-dim:     #3A3020;
+  --rr-red:     #C0392B;
+  --rr-amber:   #D4880A;
+  --rr-green:   #2E7D52;
+  --rr-cyan:    #2A7A8A;
+}
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\dehaze.py
+--------------------------------------------------------------------------------
+import cv2
+import torch
+import numpy as np
+from torchvision import transforms
+
+from DehazeFormer.models import *
+
+class DehazeModel:
+    def __init__(self, model_path):
+
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
+
+        # Load model
+        self.model = dehazeformer_s().to(self.device)
+
+        # Load weights
+        checkpoint = torch.load(
+            model_path,
+            map_location=self.device
+        )
+
+        # Some checkpoints use different keys
+        if 'state_dict' in checkpoint:
+            self.model.load_state_dict(checkpoint['state_dict'])
+        else:
+            self.model.load_state_dict(checkpoint)
+
+        self.model.eval()
+
+        self.transform = transforms.ToTensor()
+
+    def process(self, frame):
+
+        # BGR → RGB
+        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Tensor
+        tensor = self.transform(image).unsqueeze(0).to(self.device)
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\Density.py
+--------------------------------------------------------------------------------
+from pyfade import fade
+
+
+def get_fog_density(image_path):
+
+    """
+    Input:
+        image_path -> path to image
+
+    Returns:
+        fog_data dictionary
+    """
+
+    # ---------------------------------------------------
+    # RUN FADE
+    # ---------------------------------------------------
+
+    score = fade(image_path)
+
+    # ---------------------------------------------------
+    # NORMALIZE SCORE
+    # ---------------------------------------------------
+
+    fog_density = min(score * 10, 100)
+
+    fog_density = round(fog_density, 2)
+
+    # ---------------------------------------------------
+    # RISK LEVEL
+    # ---------------------------------------------------
+
+    if fog_density >= 80:
+
+        risk_level = "CRITICAL"
+
+        visibility = "VERY LOW"
+
+        recommended_speed = 20
+
+    elif fog_density >= 60:
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\llm.py
+--------------------------------------------------------------------------------
+
+# adas_project_context_generator.py
+
+import os
+import platform
+import subprocess
+from datetime import datetime
+
+OUTPUT_FILE = "project_context.txt"
+
+# ---------------------------------------------------
+# SETTINGS
+# ---------------------------------------------------
+
+CODE_EXTENSIONS = {
+    ".py", ".js", ".ts", ".jsx", ".tsx",
+    ".cpp", ".c", ".h", ".hpp",
+    ".java", ".html", ".css",
+    ".json", ".yaml", ".yml",
+    ".md", ".txt"
+}
+
+MODEL_EXTENSIONS = {
+    ".pt", ".pth", ".onnx", ".engine"
+}
+
+MEDIA_EXTENSIONS = {
+    ".mp4", ".avi", ".jpg", ".png", ".jpeg"
+}
+
+IGNORE_DIRS = {
+    ".git",
+    "__pycache__",
+    "node_modules",
+    "venv",
+    ".venv",
+    "env",
+    "build",
+    "dist",
+    ".idea",
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\object detect.py
+--------------------------------------------------------------------------------
+import cv2
+import numpy as np
+
+from ultralytics import YOLO
+
+# ---------------------------------------------------
+# LOAD YOLO MODEL ONLY ONCE
+# ---------------------------------------------------
+
+model = YOLO("yolov8s.pt")
+
+# ---------------------------------------------------
+# TRAFFIC LIGHT COLOR DETECTION
+# ---------------------------------------------------
+
+def detect_traffic_light_color(roi):
+
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+    # RED
+    lower_red1 = np.array([0,120,70])
+    upper_red1 = np.array([10,255,255])
+
+    lower_red2 = np.array([170,120,70])
+    upper_red2 = np.array([180,255,255])
+
+    # GREEN
+    lower_green = np.array([40,40,40])
+    upper_green = np.array([90,255,255])
+
+    # YELLOW
+    lower_yellow = np.array([15,150,150])
+    upper_yellow = np.array([35,255,255])
+
+    # Masks
+    red_mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
+    red_mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+
+    red_mask = red_mask1 + red_mask2
+
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\project_structure.txt
+--------------------------------------------------------------------------------
+============================================================
+PROJECT FOLDER STRUCTURE
+============================================================
+
+
+============================================================
+END OF PROJECT STRUCTURE
+============================================================
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\Requirements.txt
+--------------------------------------------------------------------------------
+fastapi==0.111.0
+uvicorn==0.29.0
+opencv-python-headless==4.9.0.80
+numpy==1.26.4
+ultralytics==8.2.0
+langchain==0.2.0
+langchain-openai==0.1.7
+langchain-community==0.2.0
+python-multipart==0.0.9
+websockets==12.0
+pydantic==2.7.1
+httpx==0.27.0
+pillow==10.3.0
+torch==2.2.2
+torchvision==0.17.2
+python-dotenv==1.0.1
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\road_context.py
+--------------------------------------------------------------------------------
+import json
+import requests
+
+from geopy.distance import geodesic
+
+# ---------------------------------------------------
+# LOAD BLACKSPOTS
+# ---------------------------------------------------
+
+with open("blackspots.json") as f:
+
+    BLACKSPOTS = json.load(f)
+
+# ---------------------------------------------------
+# GET ROAD CONTEXT
+# ---------------------------------------------------
+
+def get_road_context(lat, lon):
+
+    current_location = (lat, lon)
+
+    # ---------------------------------------------------
+    # REVERSE GEOCODING
+    # ---------------------------------------------------
+
+    url = (
+        f"https://nominatim.openstreetmap.org/"
+        f"reverse?format=jsonv2&lat={lat}&lon={lon}"
+    )
+
+    headers = {
+        "User-Agent": "road-awareness-system"
+    }
+
+    response = requests.get(url, headers=headers)
+
+    data = response.json()
+
+    address = data.get("address", {})
+
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\voice_alert.py
+--------------------------------------------------------------------------------
+import time
+import pyttsx3
+
+engine = pyttsx3.init()
+
+engine.setProperty('rate', 160)
+
+last_alert_time = {}
+
+ALERT_COOLDOWN = 10
+
+
+def speak_alert(alert_key, message):
+
+    current_time = time.time()
+
+    if alert_key in last_alert_time:
+
+        elapsed = (
+            current_time
+            - last_alert_time[alert_key]
+        )
+
+        if elapsed < ALERT_COOLDOWN:
+            return
+
+    last_alert_time[alert_key] = current_time
+
+    print(f"ALERT: {message}")
+
+    engine.say(message)
+
+    engine.runAndWait()
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\Adonet\ffa.py
+--------------------------------------------------------------------------------
+from ffa_test import main
+
+
+if __name__ == "__main__":
+    main()
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\Adonet\ffa_test.py
+--------------------------------------------------------------------------------
+import argparse
+from pathlib import Path
+
+import cv2
+import numpy as np
+
+try:
+    import torch
+    import torch.nn as nn
+except ModuleNotFoundError as exc:
+    raise SystemExit(
+        "PyTorch is required for FFA-Net inference. Install it with:\n"
+        "  pip install torch torchvision\n"
+        "Then run this script again."
+    ) from exc
+
+
+MODEL_PRESETS = {
+    "its": "its_train_ffa_3_19.pk",
+    "ots": "ots_train_ffa_3_19.pk",
+}
+
+
+def default_conv(in_channels, out_channels, kernel_size, bias=True):
+    return nn.Conv2d(
+        in_channels,
+        out_channels,
+        kernel_size,
+        padding=kernel_size // 2,
+        bias=bias,
+    )
+
+
+class PALayer(nn.Module):
+    def __init__(self, channel):
+        super().__init__()
+        self.pa = nn.Sequential(
+            nn.Conv2d(channel, channel // 8, 1, padding=0, bias=True),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(channel // 8, 1, 1, padding=0, bias=True),
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\Adonet\new.py
+--------------------------------------------------------------------------------
+import cv2
+import numpy as np
+import tempfile
+from pathlib import Path
+
+prototxt_template_path = Path("test/test_template.prototxt")
+caffemodel_path = Path("AOD_Net.caffemodel")
+image_path = Path("test_frames/kaka.png")
+
+# 1. Load and prepare the frame.
+frame = cv2.imread(str(image_path))
+if frame is None:
+    raise FileNotFoundError(f"Could not read input image: {image_path}")
+h, w = frame.shape[:2]
+
+# 2. Render the Caffe deploy prototxt with the current image size.
+prototxt = prototxt_template_path.read_text().format(height=h, width=w)
+with tempfile.NamedTemporaryFile("w", suffix=".prototxt", delete=False) as tmp:
+    tmp.write(prototxt)
+    prototxt_path = tmp.name
+
+# 3. Load the original Caffe model via OpenCV. No Caffe installation required.
+net = cv2.dnn.readNetFromCaffe(prototxt_path, str(caffemodel_path))
+
+# (Optional) Tell OpenCV to use your NVIDIA GPU if available.
+# net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+# net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+
+# Convert the image to a float32 blob. AOD-Net expects values between 0 and 1.
+blob = cv2.dnn.blobFromImage(frame, 1.0/255.0, (w, h), (0, 0, 0), swapRB=False, crop=False)
+
+# 4. Run the forward pass.
+net.setInput(blob)
+output = net.forward()
+
+# 5. Post-process the output from (1, 3, H, W) back to (H, W, 3).
+dehazed_frame = output[0].transpose(1, 2, 0)
+
+# Clip values to ensure they stay in valid image bounds [0, 1].
+dehazed_frame = np.clip(dehazed_frame, 0.0, 1.0)
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\Adonet\test.py
+--------------------------------------------------------------------------------
+import os
+import numpy as np
+import caffe
+import sys
+from pylab import *
+import re
+import random
+import time
+import copy
+import matplotlib.pyplot as plt
+import cv2
+import scipy
+import shutil
+import csv
+from PIL import Image
+import datetime
+
+
+def EditFcnProto(templateFile, height, width):
+	with open(templateFile, 'r') as ft:
+		template = ft.read()
+        print templateFile
+        outFile = 'DeployT.prototxt'
+        with open(outFile, 'w') as fd:
+            fd.write(template.format(height=height,width=width))
+
+def test():
+    caffe.set_mode_gpu()
+    caffe.set_device(0)
+    #caffe.set_mode_cpu();
+
+    info = os.listdir('../data/img');
+    imagesnum=0;
+    for line in info:
+        reg = re.compile(r'(.*?).jpg');
+        all = reg.findall(line)
+        if (all != []):
+            imagename = str(all[0]);
+            if (os.path.isfile(r'../data/img/%s.jpg' % imagename) == False):
+                continue;
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\README.md
+--------------------------------------------------------------------------------
+# Vision Transformers for Single Image Dehazing
+
+[![Demo](https://img.shields.io/badge/Demo-Hugging%20Face-gold)](https://huggingface.co/spaces/IDKiro/DehazeFormer_Demo)
+[![Paper](https://img.shields.io/badge/Paper-IEEE%20TIP-blue)](https://doi.org/10.1109/TIP.2023.3256763) 
+[![Paper2](https://img.shields.io/badge/Paper-arXiv-blue)](https://arxiv.org/abs/2204.03883) 
+[![GoogleDrive](https://img.shields.io/badge/Data-GoogleDrive-brightgreen)](https://drive.google.com/drive/folders/1Yy_GH6_bydYPU6_JJzFQwig4LTh86VI4?usp=sharing)
+[![BaiduPan](https://img.shields.io/badge/Data-BaiduPan-brightgreen)](https://pan.baidu.com/s/1R7cFISQHaWmFzq_7LyQMXQ?pwd=hab1)
+
+> **Abstract:** 
+Image dehazing is a representative low-level vision task that estimates latent haze-free images from hazy images.
+In recent years, convolutional neural network-based methods have dominated image dehazing.
+However, vision Transformers, which has recently made a breakthrough in high-level vision tasks, has not brought new dimensions to image dehazing.
+We start with the popular Swin Transformer and find that several of its key designs are unsuitable for image dehazing.
+To this end, we propose DehazeFormer, which consists of various improvements, such as the modified normalization layer, activation function, and spatial information aggregation scheme.
+We train multiple variants of DehazeFormer on various datasets to demonstrate its effectiveness.
+Specifically, on the most frequently used SOTS indoor set, our small model outperforms FFA-Net with only 25\% \#Param and 5\% computational cost.
+To the best of our knowledge, our large model is the first method with the PSNR over 40 dB on the SOTS indoor set, dramatically outperforming the previous state-of-the-art methods.
+We also collect a large-scale realistic remote sensing dehazing dataset for evaluating the method's capability to remove highly non-homogeneous haze.
+
+![DehazeFormer](figs/arch.png)
+
+## News
+
+- **Mar 06, 2023:** Hugging Face [demo](https://huggingface.co/spaces/IDKiro/DehazeFormer_Demo) is updated. It is a [MCT](https://github.com/IDKiro/MCT) variant trained with a mixed dataset.
+- **Feb 25, 2023:** Paper accepted by IEEE TIP. The [final version](https://doi.org/10.1109/TIP.2023.3256763) adds some experiments.
+- **Sep 23, 2022:** We release [gUNet](https://github.com/IDKiro/gUNet) with better training code.
+- **Apr 11, 2022:** [Arxiv paper link](https://arxiv.org/abs/2204.03883) is updated. [BaiduPan link](https://pan.baidu.com/s/1R7cFISQHaWmFzq_7LyQMXQ?pwd=hab1) is updated.
+- **Apr 07, 2022:** Beta version is released, including codes, [pre-trained models](https://drive.google.com/drive/folders/1gnQiI_7Dvy-ZdQUVYXt7pW0EFQkpK39B?usp=sharing), and [RS-Haze-RGB](https://drive.google.com/drive/folders/1oaQSpdYHxEv-nMOB7yCLKfw2NDCJVtrx?usp=sharing).
+
+## Preparation
+
+### Install
+
+We test the code on PyTorch 1.10.2 + CUDA 11.3 + cuDNN 8.2.0.
+
+1. Create a new conda environment
+```
+conda create -n pt1102 python=3.7
+conda activate pt1102
+```
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\requirements.txt
+--------------------------------------------------------------------------------
+opencv-python==4.5.5.62
+tqdm
+pytorch-msssim
+timm
+tensorboard
+tensorboardx
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\test.py
+--------------------------------------------------------------------------------
+import os
+import argparse
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from pytorch_msssim import ssim
+from torch.utils.data import DataLoader
+from collections import OrderedDict
+
+from utils import AverageMeter, write_img, chw_to_hwc
+from datasets.loader import PairLoader
+from models import *
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--model', default='dehazeformer-s', type=str, help='model name')
+parser.add_argument('--num_workers', default=16, type=int, help='number of workers')
+parser.add_argument('--data_dir', default='./data/', type=str, help='path to dataset')
+parser.add_argument('--save_dir', default='./saved_models/', type=str, help='path to models saving')
+parser.add_argument('--result_dir', default='./results/', type=str, help='path to results saving')
+parser.add_argument('--dataset', default='RESIDE-IN', type=str, help='dataset name')
+parser.add_argument('--exp', default='indoor', type=str, help='experiment setting')
+args = parser.parse_args()
+
+
+def single(save_dir):
+	state_dict = torch.load(save_dir)['state_dict']
+	new_state_dict = OrderedDict()
+
+	for k, v in state_dict.items():
+		name = k[7:]
+		new_state_dict[name] = v
+
+	return new_state_dict
+
+
+def test(test_loader, network, result_dir):
+	PSNR = AverageMeter()
+	SSIM = AverageMeter()
+
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\train.py
+--------------------------------------------------------------------------------
+import os
+import argparse
+import json
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.cuda.amp import autocast, GradScaler
+from torch.utils.data import DataLoader
+from tensorboardX import SummaryWriter
+from tqdm import tqdm
+
+from utils import AverageMeter
+from datasets.loader import PairLoader
+from models import *
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--model', default='dehazeformer-s', type=str, help='model name')
+parser.add_argument('--num_workers', default=16, type=int, help='number of workers')
+parser.add_argument('--no_autocast', action='store_false', default=True, help='disable autocast')
+parser.add_argument('--save_dir', default='./saved_models/', type=str, help='path to models saving')
+parser.add_argument('--data_dir', default='./data/', type=str, help='path to dataset')
+parser.add_argument('--log_dir', default='./logs/', type=str, help='path to logs')
+parser.add_argument('--dataset', default='RESIDE-IN', type=str, help='dataset name')
+parser.add_argument('--exp', default='indoor', type=str, help='experiment setting')
+parser.add_argument('--gpu', default='0,1,2,3', type=str, help='GPUs used for training')
+args = parser.parse_args()
+
+os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+
+
+def train(train_loader, network, criterion, optimizer, scaler):
+	losses = AverageMeter()
+
+	torch.cuda.empty_cache()
+	
+	network.train()
+
+	for batch in train_loader:
+		source_img = batch['source'].cuda()
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\indoor\default.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 32,
+    "patch_size": 256,
+    "valid_mode": "test",
+    "edge_decay": 0,
+    "only_h_flip": false,
+    "optimizer": "adamw",
+    "lr": 4e-4,
+    "epochs":300,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\indoor\dehazeformer-b.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 16,
+    "patch_size": 256,
+    "valid_mode": "test",
+    "edge_decay": 0,
+    "only_h_flip": false,
+    "optimizer": "adamw",
+    "lr": 2e-4,
+    "epochs":300,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\indoor\dehazeformer-d.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 8,
+    "patch_size": 256,
+    "valid_mode": "test",
+    "edge_decay": 0.1,
+    "only_h_flip": false,
+    "optimizer": "adamw",
+    "lr": 1e-4,
+    "epochs":300,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\indoor\dehazeformer-l.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 8,
+    "patch_size": 256,
+    "valid_mode": "test",
+    "edge_decay": 0.1,
+    "only_h_flip": false,
+    "optimizer": "adamw",
+    "lr": 1e-4,
+    "epochs":300,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\indoor\dehazeformer-m.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 16,
+    "patch_size": 256,
+    "valid_mode": "test",
+    "edge_decay": 0,
+    "only_h_flip": false,
+    "optimizer": "adamw",
+    "lr": 2e-4,
+    "epochs":300,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\indoor\dehazeformer-s.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 16,
+    "patch_size": 256,
+    "valid_mode": "test",
+    "edge_decay": 0,
+    "only_h_flip": false,
+    "optimizer": "adamw",
+    "lr": 2e-4,
+    "epochs":300,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\indoor\dehazeformer-t.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 32,
+    "patch_size": 256,
+    "valid_mode": "test",
+    "edge_decay": 0,
+    "only_h_flip": false,
+    "optimizer": "adamw",
+    "lr": 4e-4,
+    "epochs":300,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\indoor\dehazeformer-w.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 8,
+    "patch_size": 256,
+    "valid_mode": "test",
+    "edge_decay": 0.1,
+    "only_h_flip": false,
+    "optimizer": "adamw",
+    "lr": 1e-4,
+    "epochs":300,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\outdoor\default.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 32,
+    "patch_size": 256,
+    "valid_mode": "valid",
+    "edge_decay": 0,
+    "only_h_flip": true,
+    "optimizer": "adamw",
+    "lr": 4e-4,
+    "epochs":30,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\outdoor\dehazeformer-b.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 16,
+    "patch_size": 256,
+    "valid_mode": "valid",
+    "edge_decay": 0,
+    "only_h_flip": true,
+    "optimizer": "adamw",
+    "lr": 2e-4,
+    "epochs":30,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\outdoor\dehazeformer-m.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 16,
+    "patch_size": 256,
+    "valid_mode": "valid",
+    "edge_decay": 0,
+    "only_h_flip": true,
+    "optimizer": "adamw",
+    "lr": 2e-4,
+    "epochs":30,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\outdoor\dehazeformer-s.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 16,
+    "patch_size": 256,
+    "valid_mode": "valid",
+    "edge_decay": 0,
+    "only_h_flip": true,
+    "optimizer": "adamw",
+    "lr": 2e-4,
+    "epochs":30,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\outdoor\dehazeformer-t.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 32,
+    "patch_size": 256,
+    "valid_mode": "valid",
+    "edge_decay": 0,
+    "only_h_flip": true,
+    "optimizer": "adamw",
+    "lr": 4e-4,
+    "epochs":30,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\reside6k\default.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 32,
+    "patch_size": 256,
+    "valid_mode": "valid",
+    "edge_decay": 0,
+    "only_h_flip": true,
+    "optimizer": "adamw",
+    "lr": 2e-4,
+    "epochs":1000,
+    "eval_freq": 10
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\reside6k\dehazeformer-b.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 16,
+    "patch_size": 256,
+    "valid_mode": "valid",
+    "edge_decay": 0,
+    "only_h_flip": true,
+    "optimizer": "adamw",
+    "lr": 1e-4,
+    "epochs":1000,
+    "eval_freq": 10
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\reside6k\dehazeformer-m.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 16,
+    "patch_size": 256,
+    "valid_mode": "valid",
+    "edge_decay": 0,
+    "only_h_flip": true,
+    "optimizer": "adamw",
+    "lr": 1e-4,
+    "epochs":1000,
+    "eval_freq": 10
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\reside6k\dehazeformer-s.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 16,
+    "patch_size": 256,
+    "valid_mode": "valid",
+    "edge_decay": 0,
+    "only_h_flip": true,
+    "optimizer": "adamw",
+    "lr": 1e-4,
+    "epochs":1000,
+    "eval_freq": 10
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\reside6k\dehazeformer-t.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 32,
+    "patch_size": 256,
+    "valid_mode": "valid",
+    "edge_decay": 0,
+    "only_h_flip": true,
+    "optimizer": "adamw",
+    "lr": 2e-4,
+    "epochs":1000,
+    "eval_freq": 10
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\rshaze\default.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 32,
+    "patch_size": 256,
+    "valid_mode": "test",
+    "edge_decay": 0,
+    "only_h_flip": false,
+    "optimizer": "adamw",
+    "lr": 4e-4,
+    "epochs":150,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\rshaze\dehazeformer-b.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 16,
+    "patch_size": 256,
+    "valid_mode": "test",
+    "edge_decay": 0,
+    "only_h_flip": false,
+    "optimizer": "adamw",
+    "lr": 2e-4,
+    "epochs":150,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\rshaze\dehazeformer-m.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 16,
+    "patch_size": 256,
+    "valid_mode": "test",
+    "edge_decay": 0,
+    "only_h_flip": false,
+    "optimizer": "adamw",
+    "lr": 2e-4,
+    "epochs":150,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\rshaze\dehazeformer-s.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 16,
+    "patch_size": 256,
+    "valid_mode": "test",
+    "edge_decay": 0,
+    "only_h_flip": false,
+    "optimizer": "adamw",
+    "lr": 2e-4,
+    "epochs":150,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\configs\rshaze\dehazeformer-t.json
+--------------------------------------------------------------------------------
+{
+    "batch_size": 32,
+    "patch_size": 256,
+    "valid_mode": "test",
+    "edge_decay": 0,
+    "only_h_flip": false,
+    "optimizer": "adamw",
+    "lr": 4e-4,
+    "epochs":150,
+    "eval_freq": 1
+}
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\datasets\loader.py
+--------------------------------------------------------------------------------
+import os
+import random
+import numpy as np
+import cv2
+
+from torch.utils.data import Dataset
+from utils import hwc_to_chw, read_img
+
+
+def augment(imgs=[], size=256, edge_decay=0., only_h_flip=False):
+	H, W, _ = imgs[0].shape
+	Hc, Wc = [size, size]
+
+	# simple re-weight for the edge
+	if random.random() < Hc / H * edge_decay:
+		Hs = 0 if random.randint(0, 1) == 0 else H - Hc
+	else:
+		Hs = random.randint(0, H-Hc)
+
+	if random.random() < Wc / W * edge_decay:
+		Ws = 0 if random.randint(0, 1) == 0 else W - Wc
+	else:
+		Ws = random.randint(0, W-Wc)
+
+	for i in range(len(imgs)):
+		imgs[i] = imgs[i][Hs:(Hs+Hc), Ws:(Ws+Wc), :]
+
+	# horizontal flip
+	if random.randint(0, 1) == 1:
+		for i in range(len(imgs)):
+			imgs[i] = np.flip(imgs[i], axis=1)
+
+	if not only_h_flip:
+		# bad data augmentations for outdoor
+		rot_deg = random.randint(0, 3)
+		for i in range(len(imgs)):
+			imgs[i] = np.rot90(imgs[i], rot_deg, (0, 1))
+			
+	return imgs
+
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\datasets\__init__.py
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\models\dehazeformer.py
+--------------------------------------------------------------------------------
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import math
+import numpy as np
+from torch.nn.init import _calculate_fan_in_and_fan_out
+from timm.models.layers import to_2tuple, trunc_normal_
+
+
+class RLN(nn.Module):
+	r"""Revised LayerNorm"""
+	def __init__(self, dim, eps=1e-5, detach_grad=False):
+		super(RLN, self).__init__()
+		self.eps = eps
+		self.detach_grad = detach_grad
+
+		self.weight = nn.Parameter(torch.ones((1, dim, 1, 1)))
+		self.bias = nn.Parameter(torch.zeros((1, dim, 1, 1)))
+
+		self.meta1 = nn.Conv2d(1, dim, 1)
+		self.meta2 = nn.Conv2d(1, dim, 1)
+
+		trunc_normal_(self.meta1.weight, std=.02)
+		nn.init.constant_(self.meta1.bias, 1)
+
+		trunc_normal_(self.meta2.weight, std=.02)
+		nn.init.constant_(self.meta2.bias, 0)
+
+	def forward(self, input):
+		mean = torch.mean(input, dim=(1, 2, 3), keepdim=True)
+		std = torch.sqrt((input - mean).pow(2).mean(dim=(1, 2, 3), keepdim=True) + self.eps)
+
+		normalized_input = (input - mean) / std
+
+		if self.detach_grad:
+			rescale, rebias = self.meta1(std.detach()), self.meta2(mean.detach())
+		else:
+			rescale, rebias = self.meta1(std), self.meta2(mean)
+
+		out = normalized_input * self.weight + self.bias
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\models\__init__.py
+--------------------------------------------------------------------------------
+from .dehazeformer import dehazeformer_t, dehazeformer_s, dehazeformer_b, dehazeformer_d, dehazeformer_w, dehazeformer_m, dehazeformer_l, DehazeFormer
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\utils\common.py
+--------------------------------------------------------------------------------
+import numpy as np
+import cv2
+
+
+class AverageMeter(object):
+	def __init__(self):
+		self.reset()
+
+	def reset(self):
+		self.val = 0
+		self.avg = 0
+		self.sum = 0
+		self.count = 0
+
+	def update(self, val, n=1):
+		self.val = val
+		self.sum += val * n
+		self.count += n
+		self.avg = self.sum / self.count
+
+
+class ListAverageMeter(object):
+	"""Computes and stores the average and current values of a list"""
+	def __init__(self):
+		self.len = 10000  # set up the maximum length
+		self.reset()
+
+	def reset(self):
+		self.val = [0] * self.len
+		self.avg = [0] * self.len
+		self.sum = [0] * self.len
+		self.count = 0
+
+	def set_len(self, n):
+		self.len = n
+		self.reset()
+
+	def update(self, vals, n=1):
+		assert len(vals) == self.len, 'length of vals not equal to self.len'
+		self.val = vals
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\utils\data_parallel.py
+--------------------------------------------------------------------------------
+from torch.nn.parallel import DataParallel
+import torch
+from torch.nn.parallel._functions import Scatter
+from torch.nn.parallel.parallel_apply import parallel_apply
+
+def scatter(inputs, target_gpus, chunk_sizes, dim=0):
+    r"""
+    Slices tensors into approximately equal chunks and
+    distributes them across given GPUs. Duplicates
+    references to objects that are not tensors.
+    """
+    def scatter_map(obj):
+        if isinstance(obj, torch.Tensor):
+            try:
+                return Scatter.apply(target_gpus, chunk_sizes, dim, obj)
+            except:
+                print('obj', obj.size())
+                print('dim', dim)
+                print('chunk_sizes', chunk_sizes)
+                quit()
+        if isinstance(obj, tuple) and len(obj) > 0:
+            return list(zip(*map(scatter_map, obj)))
+        if isinstance(obj, list) and len(obj) > 0:
+            return list(map(list, zip(*map(scatter_map, obj))))
+        if isinstance(obj, dict) and len(obj) > 0:
+            return list(map(type(obj), zip(*map(scatter_map, obj.items()))))
+        return [obj for targets in target_gpus]
+
+    # After scatter_map is called, a scatter_map cell will exist. This cell
+    # has a reference to the actual function scatter_map, which has references
+    # to a closure that has a reference to the scatter_map cell (because the
+    # fn is recursive). To avoid this reference cycle, we set the function to
+    # None, clearing the cell
+    try:
+        return scatter_map(inputs)
+    finally:
+        scatter_map = None
+
+def scatter_kwargs(inputs, kwargs, target_gpus, chunk_sizes, dim=0):
+    r"""Scatter with support for kwargs dictionary"""
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\DehazeFormer\utils\__init__.py
+--------------------------------------------------------------------------------
+from .common import AverageMeter, ListAverageMeter, read_img, write_img, hwc_to_chw, chw_to_hwc
+from .data_parallel import BalancedDataParallel
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\PyFADE\README.md
+--------------------------------------------------------------------------------
+# PyFADE
+
+FADE (Fog Aware Density Evaluator) is a method for estimating haze density in an image, and it is often used as an indicator for evaluating the dehazing performance of methods in image dehazing.
+
+PyFADE is an unofficial Python implementation of FADE. The implementation is designed to closely match the MATLAB results, while providing higher efficiency and stronger plug-and-play compatibility with existing experimental code.
+
+
+
+## ⚙️ Installation
+
+Install from PyPI:
+
+```bash
+pip install fade-python
+```
+
+The published distribution name is `fade-python`, while the import package and
+CLI command remain `pyfade`.
+
+Install from a local checkout:
+
+```bash
+git clone https://github.com/cnyvfang/PyFADE.git
+cd PyFADE
+# Option 1:
+pip install .              # standard install
+# Option 2:
+pip install -e ".[dev]"    # editable install for development
+# Option 3:
+pip install ".[tensor]"    # with PyTorch input support
+```
+
+The base install already includes the current runtime dependencies used by the
+latest implementation, including `numba` and `turbojpeg`.
+
+## 🔨 Usage
+
+```python
+from pyfade import fade
+```
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\PyFADE\setup.py
+--------------------------------------------------------------------------------
+from setuptools import setup
+
+
+setup()
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\PyFADE\src\pyfade\cli.py
+--------------------------------------------------------------------------------
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+
+from .core import FolderResult, fade
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="pyfade: MATLAB-aligned FADE fog density evaluation.")
+    parser.add_argument("input", type=Path, help="Image path, folder path, or .npy array path.")
+    parser.add_argument("--workers", type=int, default=1, help="Image-level worker count. Default: 1.")
+    parser.add_argument(
+        "--progress",
+        action="store_true",
+        help="Show a progress bar for folder or batch evaluation.",
+    )
+    parser.add_argument(
+        "--return-map",
+        action="store_true",
+        help="Return density maps in addition to scores.",
+    )
+    parser.add_argument(
+        "--show-map-shape",
+        action="store_true",
+        help="For a single image or array, also print the density map shape.",
+    )
+    return parser
+
+
+def main() -> None:
+    args = build_parser().parse_args()
+    result = fade(
+        args.input,
+        workers=args.workers,
+        progress=args.progress,
+        return_map=args.return_map or args.show_map_shape,
+    )
+
+    if isinstance(result, FolderResult):
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\PyFADE\src\pyfade\core.py
+--------------------------------------------------------------------------------
+from __future__ import annotations
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
+import struct
+from typing import Iterable, Sequence
+import zlib
+
+import numpy as np
+from PIL import Image
+from scipy import ndimage
+from scipy.io import loadmat
+from scipy.linalg import solve
+import turbojpeg
+from tqdm.auto import tqdm
+
+from ._compat import (
+    border_in,
+    border_out,
+    conv2_same,
+    entropy_integer_blocks,
+    fspecial_gaussian,
+    imfilter_replicate,
+    matlab_uint8_cast,
+    matlab_colon,
+    nanvar_sample,
+    rgb2gray_matlab,
+    rgb2hsv_matlab,
+    sample_std,
+    split_blocks,
+)
+
+PATCH_SIZE = 8
+MODEL_DIR = Path(__file__).resolve().parent / "models"
+IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff")
+FLOAT_UNIT_RANGE_TOL = 1e-6
+
+
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\PyFADE\src\pyfade\_compat.py
+--------------------------------------------------------------------------------
+from __future__ import annotations
+
+from functools import lru_cache
+from typing import Iterable
+
+import numpy as np
+from numba import njit
+from scipy import ndimage, signal
+
+
+@njit(cache=True)
+def _rgb2hsv_matlab_uint8_numba(image: np.ndarray) -> np.ndarray:
+    height, width, _ = image.shape
+    hsv = np.empty((height, width, 3), dtype=np.float64)
+    for row in range(height):
+        for col in range(width):
+            r = image[row, col, 0] / 255.0
+            g = image[row, col, 1] / 255.0
+            b = image[row, col, 2] / 255.0
+
+            maxc = r if r >= g and r >= b else (g if g >= b else b)
+            minc = r if r <= g and r <= b else (g if g <= b else b)
+            delta = maxc - minc
+
+            h = 0.0
+            s = 0.0
+            if maxc > 0.0:
+                s = delta / maxc
+
+            if delta > 0.0:
+                if maxc == r:
+                    h = ((g - b) / delta) % 6.0
+                elif maxc == g:
+                    h = ((b - r) / delta) + 2.0
+                else:
+                    h = ((r - g) / delta) + 4.0
+                h = (h / 6.0) % 1.0
+
+            hsv[row, col, 0] = h
+            hsv[row, col, 1] = s
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\PyFADE\src\pyfade\__init__.py
+--------------------------------------------------------------------------------
+from .core import FolderResult, fade, fade_array, fade_folder, fade_image, load_image
+
+__all__ = [
+    "FolderResult",
+    "fade",
+    "fade_array",
+    "fade_folder",
+    "fade_image",
+    "load_image",
+]
+
+__version__ = "1.0.0"
+
+
+--------------------------------------------------------------------------------
+FILE: C:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodvision\PyFADE\tests\test_pyfade.py
+--------------------------------------------------------------------------------
+from __future__ import annotations
+
+from pathlib import Path
+import struct
+import zlib
+
+import numpy as np
+import pytest
+from PIL import Image
+
+from pyfade import FolderResult, fade, fade_array, fade_image, load_image
+from pyfade._compat import (
+    border_in,
+    border_out,
+    conv2_same,
+    entropy_integer_blocks,
+    fspecial_gaussian,
+    imfilter_replicate,
+    matlab_uint8_cast,
+    matlab_colon,
+    nanvar_sample,
+    rgb2gray_matlab,
+    rgb2hsv_matlab,
+    split_blocks,
+)
+from pyfade.core import (
+    _apply_uint8_constant_window_lookup,
+    _constant_window_lookup,
+    _mscn_filter_replicate,
+)
+
+FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
+SAMPLE_ONE_DIR = Path(__file__).resolve().parent / "sample_one"
+
+
+class TensorLike:
+    def __init__(self, array: np.ndarray) -> None:
+        self._array = np.asarray(array)
+
+    def detach(self) -> "TensorLike":

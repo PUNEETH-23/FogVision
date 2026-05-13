@@ -1,0 +1,126 @@
+======================================================================
+FOG IMPACT ON OBJECT DETECTION - ANALYSIS REPORT
+======================================================================
+
+Test Date: 2026-05-13 00:28:05
+
+SUMMARY
+----------------------------------------------------------------------
+Baseline (Clear) Average Confidence: 0.460
+Baseline (Clear) Objects/Frame: 0.02
+Baseline (Clear) Avg Time/Frame: 0.0812s
+
+DETAILED RESULTS BY FOG LEVEL
+----------------------------------------------------------------------
+
+Fog Level: 0.0%
+  Average Confidence: 0.460 (+0.0% from baseline)
+  Objects per Frame:  0.02 (+0.0% from baseline)
+  Total Detections:   3
+  Confidence Std Dev:  0.059
+  Avg Time per Frame: 0.0812s (+0.0% from baseline)
+  DCP Estimated Fog:   26.39
+  PyFADE Estimated:   10.02
+
+Fog Level: 20.0%
+  Average Confidence: 0.440 (+4.3% from baseline)
+  Objects per Frame:  0.01 (+33.3% from baseline)
+  Total Detections:   2
+  Confidence Std Dev:  0.020
+  Avg Time per Frame: 0.0793s (-2.3% from baseline)
+  DCP Estimated Fog:   40.28
+  PyFADE Estimated:   17.99
+
+Fog Level: 40.0%
+  Average Confidence: 0.420 (+8.7% from baseline)
+  Objects per Frame:  0.01 (+33.3% from baseline)
+  Total Detections:   2
+  Confidence Std Dev:  0.000
+  Avg Time per Frame: 0.0795s (-2.1% from baseline)
+  DCP Estimated Fog:   49.43
+  PyFADE Estimated:   32.11
+
+Fog Level: 60.0%
+  Average Confidence: 0.000 (+100.0% from baseline)
+  Objects per Frame:  0.00 (+100.0% from baseline)
+  Total Detections:   0
+  Confidence Std Dev:  0.000
+  Avg Time per Frame: 0.0796s (-2.1% from baseline)
+  DCP Estimated Fog:   54.86
+  PyFADE Estimated:   48.85
+
+Fog Level: 80.0%
+  Average Confidence: 0.000 (+100.0% from baseline)
+  Objects per Frame:  0.00 (+100.0% from baseline)
+  Total Detections:   0
+  Confidence Std Dev:  0.000
+  Avg Time per Frame: 0.0792s (-2.5% from baseline)
+  DCP Estimated Fog:   58.11
+  PyFADE Estimated:   66.30
+
+Fog Level: 100.0%
+  Average Confidence: 0.000 (+100.0% from baseline)
+  Objects per Frame:  0.00 (+100.0% from baseline)
+  Total Detections:   0
+  Confidence Std Dev:  0.000
+  Avg Time per Frame: 0.0794s (-2.3% from baseline)
+  DCP Estimated Fog:   59.93
+  PyFADE Estimated:   82.47
+
+======================================================================
+KEY FINDINGS
+======================================================================
+
+[CRITICAL] Fog level 60.0% causes significant degradation:
+   - Confidence drop: 100.0%
+   - Detection rate drop: 100.0%
+
+[CRITICAL] Fog level 80.0% causes significant degradation:
+   - Confidence drop: 100.0%
+   - Detection rate drop: 100.0%
+
+[CRITICAL] Fog level 100.0% causes significant degradation:
+   - Confidence drop: 100.0%
+   - Detection rate drop: 100.0%
+
+======================================================================
+FOG DENSITY ESTIMATION COMPARISON
+======================================================================
+(Comparing estimated vs actual fog level)
+
+CORRELATION ANALYSIS:
+  DCP Correlation with Actual Fog:    0.9459
+  PyFADE Correlation with Actual Fog: 0.9943
+
+NOTE: Both DCP and PyFADE are designed for REAL atmospheric fog,
+not synthetic fog overlay. These methods analyze:
+  - Atmospheric scattering patterns
+  - Depth-based contrast loss
+  - Color attenuation due to water droplets
+Synthetic fog (white overlay) doesn't exhibit these properties.
+
+Fog Level 0.0%:
+  DCP Estimated:   26.39 (error: 26.39)
+  PyFADE Estimated: 10.02 (error: 10.02)
+Fog Level 20.0%:
+  DCP Estimated:   40.28 (error: 20.28)
+  PyFADE Estimated: 17.99 (error: 2.01)
+Fog Level 40.0%:
+  DCP Estimated:   49.43 (error: 9.43)
+  PyFADE Estimated: 32.11 (error: 7.89)
+Fog Level 60.0%:
+  DCP Estimated:   54.86 (error: 5.14)
+  PyFADE Estimated: 48.85 (error: 11.15)
+Fog Level 80.0%:
+  DCP Estimated:   58.11 (error: 21.89)
+  PyFADE Estimated: 66.30 (error: 13.70)
+Fog Level 100.0%:
+  DCP Estimated:   59.93 (error: 40.07)
+  PyFADE Estimated: 82.47 (error: 17.53)
+
+======================================================================
+RECOMMENDATIONS
+======================================================================
+1. For synthetic fog testing, use the KNOWN fog level (ground truth)
+2. For real fog detection, train a custom model on real foggy images
+3. DCP/PyFADE work best with natural fog, not synthetic overlays

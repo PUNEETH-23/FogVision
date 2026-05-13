@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem \"C:\\\\Users\\\\Puneeth Kumar\\\\OneDrive\\\\Desktop\\\\IDP\\\\Project\\\\fodVision\" -Filter *.py)",
+      "Bash(Select-Object Name)"
+    ]
+  }
+}

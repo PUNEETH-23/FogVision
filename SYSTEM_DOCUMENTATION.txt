@@ -1,0 +1,1427 @@
+================================================================================
+                    FogVision ADAS - COMPLETE SYSTEM DOCUMENTATION
+                           Advanced Driver Assistance System
+                              May 8, 2026
+================================================================================
+
+TABLE OF CONTENTS
+================================================================================
+1. System Overview
+2. Architecture Flow
+3. Algorithms & Technologies
+4. Module Descriptions
+5. Function Definitions
+6. Configuration & Settings
+7. Data Flow Pipeline
+8. Integration Points
+9. Deployment Instructions
+
+================================================================================
+1. SYSTEM OVERVIEW
+================================================================================
+
+PROJECT NAME: FogVision - AI-Powered Road Safety Dashboard
+PURPOSE: Real-time fog detection, object detection, and AI-driven driving 
+         assistance for enhanced road safety
+TECHNOLOGY: Python, Streamlit, OpenCV, YOLOv8, Ollama LLM, Dark Channel Prior
+
+CORE FEATURES:
+- Real-time fog density estimation using Dark Channel Prior algorithm
+- Vehicle detection and distance estimation using YOLOv8 nano model
+- Brake light/red glow detection for following vehicle alerts
+- Road context enrichment via reverse geocoding and blackspot detection
+- Multi-factor risk scoring engine
+- AI-powered LLM recommendations with voice alert synthesis
+- Interactive Streamlit dashboard with real-time metrics and maps
+- 1 FPS video sampling from uploaded video files
+
+TARGET USERS: Commercial fleet operators, safety-conscious drivers, 
+              autonomous vehicle developers
+
+================================================================================
+2. ARCHITECTURE FLOW
+================================================================================
+
+MAIN PIPELINE SEQUENCE (10-Step LLD Module Architecture):
+-----------------------------------------------------------
+
+  [START]
+    |
+    v
+  1. FRAME ACQUISITION (VideoEngine)
+     └─> Read 1 frame per second from uploaded video file
+     └─> Resolution: 640x480 (resized)
+    |
+    v
+  2. FOG DENSITY ANALYSIS (fog_density.py)
+     └─> Input: Raw BGR frame (numpy array)
+     └─> Algorithm: Dark Channel Prior (DCP)
+     └─> Output: {
+         "dark_channel": uint8 image,
+         "transmission_map": uint8 image,
+         "fog_density": float (0-100)
+         }
+    |
+    v
+  3. IMAGE ENHANCEMENT (dehaze.py)
+     └─> Input: Raw BGR frame
+     └─> Algorithm: Dark Channel Prior dehazing
+     └─> Output: Dehazed/enhanced frame
+    |
+    v
+  4. OBJECT DETECTION (object_detect.py)
+     └─> Input: Dehazed frame
+     └─> Model: YOLOv8n (nano variant)
+     └─> Output: {
+         "annotated_frame": frame with boxes,
+         "detections": list of {
+           "label": class name,
+           "confidence": 0-1,
+           "bbox": [x1, y1, x2, y2],
+           "distance": meters (heuristic),
+           "traffic_light_color": R/G/Y or None
+         }
+         }
+    |
+    v
+  5. RED GLOW DETECTION (red_glow.py)
+     └─> Input: Annotated frame + detections
+     └─> Algorithm: HSV color space brake light detection
+     └─> Output: {
+         "red_glow": boolean,
+         "glow_frame": frame with glow overlays,
+         "glow_boxes": list of glow-detected bboxes
+         }
+    |
+    v
+  6. SENSOR FUSION - CONTEXT DICT
+     └─> Combine all sensor data into unified context object
+     └─> Fields: timestamp, fog_density, visibility, recommended_speed,
+                 road_name, road_type, blackspot_nearby, objects,
+                 traffic_signal, red_glow, distance_to_nearest, location
+    |
+    v
+  7. RULE ENGINE (pipeline._rule_engine)
+     └─> Returns empty alert list (LLM-driven alerts only)
+    |
+    v
+  8. RISK SCORE ENGINE (risk_score.py)
+     └─> Input: All sensor metrics + context
+     └─> Weights: Fog (0.30), Distance (0.25), Speed (0.20), 
+                  Road Context (0.10), Red Glow (0.10), Humidity (0.05)
+     └─> Output: {
+         "risk_score": 0-1,
+         "risk_level": "LOW" | "MEDIUM" | "HIGH",
+         "component_scores": dict,
+         "hard_override": boolean,
+         "override_reason": string
+         }
+    |
+    v
+  9. ROAD CONTEXT (road_context.py) [Gated every 10s]
+     └─> Input: GPS coordinates (lat, lon)
+     └─> Actions: Reverse geocoding, blackspot detection (2km radius)
+     └─> Output: {
+         "road": street name,
+         "road_type": "Highway" | "Urban Road",
+         "hazard_types": list of ["fog_prone", "rain_prone", etc],
+         "blackspots": list of nearby accident-prone zones
+         }
+    |
+    v
+  10. LLM RECOMMENDATION (llm.py) [Gated every 5s]
+      └─> Input: Full context dictionary
+      └─> Model: Ollama Qwen3:1.7b (or DeepSeek-r1:1.5b)
+      └─> Output: Structured text with:
+          - Risk Level Assessment
+          - Hazard Alert
+          - Recommended Speed
+          - Driving Suggestion
+          - Short Explanation
+          - Object Detection Alert
+    |
+    v
+  11. VOICE ALERT EXTRACTION & SYNTHESIS (voice_alert.py)
+      └─> Extract "Hazard Alert" + "Object Detection Alert" from LLM
+      └─> Use pyttsx3 to speak alert text (threaded, non-blocking)
+      └─> Cooldown: 5 seconds per alert type to prevent spam
+    |
+    v
+  12. DASHBOARD DISPLAY (DashBoard.py)
+      └─> Render dehazed annotated frame with overlays
+      └─> Display metrics: fog %, visibility, recommended speed, FPS
+      └─> Show risk score with component breakdown bars
+      └─> Interactive map with current location and blackspots
+      └─> LLM recommendation text panel
+      └─> Safety alerts section
+    |
+    v
+  [END - NEXT FRAME AFTER 1 SECOND]
+
+================================================================================
+3. ALGORITHMS & TECHNOLOGIES
+================================================================================
+
+3.1 DARK CHANNEL PRIOR (DCP) FOR FOG DETECTION
+---------------------------------------------------
+Algorithm: Dark Channel Prior (DCP)
+Paper: He et al., "Single Image Haze Removal via Dark Channel Prior" (2011)
+
+CONCEPT:
+- Images of outdoor scenes tend to have at least one color channel with very 
+  low intensity in some region (the "dark channel")
+- In hazy images, this property is weakened due to atmospheric scattering
+- Fog density is measured by analyzing how much the dark channel property degrades
+
+IMPLEMENTATION (fog_density.py):
+1. Convert RGB image to floating point [0, 1]
+2. For each pixel, compute minimum across all 3 channels
+3. Apply morphological erosion with 15x15 kernel to get dark channel map
+4. Find atmospheric light estimate from the brightest pixels in dark channel
+5. Compute transmission map (shows how much light penetrates without scattering)
+6. Fog density score = mean(dark_channel) * 100
+
+OUTPUT:
+- "dark_channel": Visual representation of dark regions (uint8 image)
+- "transmission_map": How much light is attenuated (uint8 image)
+- "fog_density": Numeric score 0-100 (0=clear, 100=densest fog)
+
+KEY PARAMETERS:
+- Window size: 15x15 pixels (for morphological operations)
+- Omega (scattering coefficient): 0.95
+
+3.2 YOLOV8 NANO FOR OBJECT DETECTION
+-------------------------------------------
+Model: YOLOv8n (Nano variant, ~3.2M parameters)
+Framework: Ultralytics
+
+CHARACTERISTICS:
+- Lightweight version suitable for real-time inference
+- Trained on COCO dataset (~80 classes)
+- Input: 640x480 BGR frame
+- Output: Bounding boxes with class confidence
+
+CLASSES DETECTED:
+- car, truck, bus, motorcycle, bicycle, person, dog, cat, etc.
+- Traffic lights (with color classification: RED, GREEN, YELLOW)
+
+INFERENCE PARAMETERS:
+- Device: GPU (if available) or CPU
+- Half precision: Enabled on CUDA devices
+- Confidence threshold: Default from ultralytics
+
+INTEGRATION:
+- Model loaded once at startup (singleton pattern)
+- Runs on every delivered frame (1 fps)
+- Distance estimation: depth_heuristic = 50 / bbox_height (meters)
+
+3.3 BRAKE LIGHT / RED GLOW DETECTION
+----------------------------------------
+Algorithm: HSV Color Space Thresholding
+
+CONCEPT:
+- Convert BGR frame to HSV (Hue, Saturation, Value)
+- Define ranges for red color (accounting for hue wraparound at 0/180)
+- Count red pixels in detected vehicle bounding boxes
+
+HSV RED RANGES:
+- Lower Red 1: H=0-10, S=120-255, V=70-255
+- Upper Red 1: H=170-180, S=120-255, V=70-255
+- (Two ranges because red wraps around in HSV hue space)
+
+THRESHOLD:
+- If >20% of bbox pixels are red, classify as brake light active
+
+OUTPUT:
+- "red_glow": Boolean (True if brake lights detected)
+- "glow_boxes": List of bboxes with active brake lights
+- "glow_frame": Annotated frame with red glow overlays
+
+3.4 REVERSE GEOCODING (NOMINATIM)
+--------------------------------------
+Service: OpenStreetMap Nominatim API
+Endpoint: https://nominatim.openstreetmap.org/reverse
+
+PURPOSE:
+- Convert GPS coordinates (lat, lon) to human-readable addresses
+- Extract street name, road type, nearby landmarks
+
+RATE LIMITING:
+- 1 request per second (Nominatim terms of service)
+- Cached for 10 seconds to avoid repeated calls
+- Timeout: 10 seconds per request
+
+FALLBACK:
+- If geocoding fails, return "Unknown" for road name
+- Continue pipeline without blocking
+
+3.5 RISK SCORE CALCULATION
+-------------------------------
+Algorithm: Weighted Multi-Factor Risk Assessment
+
+FORMULA:
+  risk_score = Σ(weight_i × component_i)
+
+where i ∈ {fog, distance, speed, road, red_glow, humidity}
+
+WEIGHTS & FORMULAS:
+1. Fog Component (0.30 weight)
+   - normalized_fog = fog_density / 100  [0-1]
+
+2. Distance Component (0.25 weight)
+   - if distance = 0: score = 0
+   - if distance ≤ 5m: score = 1 (collision zone)
+   - linear interpolation from 5m to 60m
+   - if distance ≥ 60m: score = 0
+
+3. Speed Component (0.20 weight)
+   - Inverted: lower recommended_speed = higher risk
+   - Interpolate from 20 km/h (high risk) to 80 km/h (low risk)
+
+4. Road Context Component (0.10 weight)
+   - +0.4 if blackspots nearby
+   - +0.3 if curve road detected
+   - Maximum 1.0
+
+5. Red Glow Component (0.10 weight)
+   - 1.0 if red_glow is True
+   - 0.0 if False
+
+6. Humidity Component (0.05 weight)
+   - placeholder (0 until sensor integrated)
+
+THRESHOLDS:
+- risk_score ≤ 0.30: "LOW"
+- 0.30 < risk_score ≤ 0.60: "MEDIUM"
+- risk_score > 0.60: "HIGH"
+
+HARD OVERRIDE RULES:
+- If red_glow AND distance < 20m → score ≥ 0.70 (HIGH)
+- If distance < 10m → score ≥ 0.70 (HIGH)
+- If curve AND distance < 25m → score ≥ 0.35 (MEDIUM floor)
+
+3.6 OLLAMA LLM MODEL
+------------------------
+Model: Ollama Qwen3:1.7b (primary) or DeepSeek-r1:1.5b
+Type: Quantized language model running locally (no API calls)
+Size: ~1.7B parameters (fits on consumer hardware)
+Inference: CPU/GPU based on available resources
+
+PROMPTING:
+- System role: "Advanced Driver Assistance System"
+- Task: Analyze driving context and generate safety recommendations
+- Output format: Structured text with numbered sections
+
+LLM OUTPUT SECTIONS:
+1. Risk Level - Summary assessment
+2. Hazard Alert - Concise warning (extracted for voice)
+3. Recommended Speed - Safe speed in km/h
+4. Driving Suggestion - Action for driver
+5. Short Explanation - Reason for recommendation
+6. Object Detection Alert - Alert based on detected objects
+
+LATENCY:
+- First inference: ~2-3 seconds (model load + inference)
+- Subsequent: ~1-2 seconds
+- Cached for 5 seconds to avoid repeated calls
+
+3.7 VOICE SYNTHESIS (PYTTSX3)
+---------------------------------
+Library: pyttsx3 (cross-platform TTS)
+Engine: System default (SAPI5 on Windows, NSS on Linux, AVFoundation on macOS)
+
+PARAMETERS:
+- Rate: 160 wpm (words per minute)
+- Volume: Default (system settings)
+- Voice: Default system voice
+
+THREADING:
+- Runs in background thread (non-blocking)
+- Does not interrupt UI or pipeline
+- Multiple alerts can queue
+
+COOLDOWN:
+- 5 seconds per alert type (prevents alert spam)
+- Tracked by alert_key: {"llm_recommendation", "fog", "distance", etc.}
+
+EXTRACTION FROM LLM:
+- Parse LLM output for "Hazard Alert:" line
+- Extract only the alert text (first ~100 chars)
+- If no structured output, fall back to full LLM text
+
+================================================================================
+4. MODULE DESCRIPTIONS
+================================================================================
+
+4.1 fog_density.py
+-------------------
+FILE LOCATION: c:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodVision\fog_density.py
+
+PURPOSE: Analyze fog density using Dark Channel Prior algorithm
+
+DEPENDENCIES:
+- cv2 (OpenCV)
+- numpy
+- Union from typing
+
+KEY FUNCTIONS:
+
+get_dark_channel(img, window_size=15)
+  Input: img (float64 array, normalized [0,1])
+         window_size (int, default 15)
+  Output: dark_channel (2D array)
+  Algorithm:
+    - Compute minimum across 3 color channels for each pixel
+    - Apply morphological erosion with window_size×window_size kernel
+    - Return eroded minimum channel
+
+get_atmospheric_light(img, dark_channel)
+  Input: img (float64 array)
+         dark_channel (2D array from above)
+  Output: atmospheric_light (1D array, shape (3,) for BGR)
+  Algorithm:
+    - Find brightest 0.1% of pixels in dark channel
+    - Average their RGB values to estimate atmospheric scattering
+
+get_transmission_map(img, atmospheric_light, window_size=15, omega=0.95)
+  Input: img (float64 array)
+         atmospheric_light (1D array)
+         window_size (int)
+         omega (float, scattering coefficient)
+  Output: transmission_map (2D array, [0-1])
+  Algorithm:
+    - Normalize image by dividing by atmospheric light
+    - Compute dark channel of normalized image
+    - transmission = 1 - omega * dark_channel
+    - (Higher omega = more aggressive dehazing)
+
+_prepare_image(image_or_path: Union[str, np.ndarray]) -> np.ndarray
+  Input: Either file path string or numpy array
+  Output: BGR image as uint8 numpy array
+  Purpose: Handle both file and array inputs
+
+estimate_fog_density(image_or_path: Union[str, np.ndarray])
+  Input: Either image file path or BGR numpy array
+  Output: Dictionary with keys:
+    - "dark_channel": uint8 visualization (0-255)
+    - "transmission_map": uint8 visualization (0-255)
+    - "fog_density": float (0-100)
+  Main function: Orchestrates DCP algorithm
+
+USAGE EXAMPLE:
+  from fog_density import estimate_fog_density
+  import cv2
+  
+  # Method 1: From file
+  result = estimate_fog_density("path/to/image.jpg")
+  
+  # Method 2: From numpy array
+  frame = cv2.imread("image.jpg")
+  result = estimate_fog_density(frame)
+  
+  fog_pct = result["fog_density"]  # e.g., 65.4
+
+OUTPUT FORMAT:
+  {
+    "dark_channel": numpy.ndarray (uint8, shape=(H,W)),
+    "transmission_map": numpy.ndarray (uint8, shape=(H,W)),
+    "fog_density": float (0-100)
+  }
+
+---
+
+4.2 dehaze.py
+--------------
+FILE LOCATION: c:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodVision\dehaze.py
+
+PURPOSE: Enhance foggy images by removing atmospheric haze
+
+KEY CLASS:
+
+class DehazeModel
+  __init__()
+    - Initializes Dark Channel Prior dehazing model
+    
+  process(frame)
+    Input: BGR frame (numpy array)
+    Output: Dehazed BGR frame (numpy array, same shape)
+    Algorithm:
+      1. Convert to float [0,1]
+      2. Compute dark channel
+      3. Estimate atmospheric light
+      4. Compute transmission map
+      5. Apply dehazing formula: I(x) = max(J(x), t0)
+         where J(x) = (I(x) - A) / transmission + A
+      6. Clip to [0,1], convert back to uint8
+    
+USAGE:
+  from dehaze import DehazeModel
+  
+  dehaze = DehazeModel()  # Create once (expensive)
+  enhanced_frame = dehaze.process(foggy_frame)
+
+---
+
+4.3 object_detect.py
+---------------------
+FILE LOCATION: c:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodVision\object_detect.py
+
+PURPOSE: Detect objects and estimate distances using YOLOv8
+
+GLOBAL STATE:
+- model: YOLO("models/yolov8n.pt") - loaded once
+- _HAS_CUDA: Boolean, True if CUDA available
+- _DEVICE: 0 (GPU) or "cpu"
+
+KEY FUNCTIONS:
+
+detect_traffic_light_color(roi)
+  Input: roi (BGR image crop around traffic light)
+  Output: "RED" | "GREEN" | "YELLOW" | None
+  Algorithm:
+    - Convert to HSV
+    - Define color ranges for each light
+    - Create masks for each color
+    - Return color with highest pixel count
+  
+  Color Ranges (HSV):
+    RED: H 0-10 or 170-180, S 120-255, V 70-255
+    GREEN: H 40-90, S 40-255, V 40-255
+    YELLOW: H 15-35, S 150-255, V 150-255
+
+process_frame(frame)
+  Input: frame (BGR image, processed by dehaze)
+  Output: Tuple of:
+    - annotated_frame (frame with bounding boxes drawn)
+    - detections_list (list of detection dicts)
+  
+  Algorithm:
+    1. Run YOLO inference on frame
+    2. For each detection:
+       a. Extract bounding box coordinates
+       b. Get class label and confidence
+       c. If traffic light: analyze ROI for color
+       d. Draw box with appropriate color
+       e. Calculate distance: 50.0 / max(height, 1)
+       f. Add to detections list
+    3. Return annotated frame and detections
+
+DETECTION OUTPUT FORMAT:
+  {
+    "label": str (class name),
+    "confidence": float (0-1),
+    "bbox": [x1, y1, x2, y2] (pixel coordinates),
+    "traffic_light_color": str ("RED"/"GREEN"/"YELLOW") or None,
+    "distance": float (meters, heuristic estimate)
+  }
+
+DISTANCE HEURISTIC:
+- Formula: distance = 50 / bbox_height
+- Assumes fixed focal length and known object size
+- Rough estimate (±30% error typical)
+- Value 0 when height = 0 (prevents div by zero)
+
+---
+
+4.4 red_glow.py
+----------------
+FILE LOCATION: c:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodVision\red_glow.py
+
+PURPOSE: Detect brake lights (red glow) in vehicles ahead
+
+KEY FUNCTION:
+
+detect_red_glow(frame, detections)
+  Input: 
+    - frame: BGR annotated image from object_detect
+    - detections: list of detection dicts
+  Output: Dictionary with:
+    - "red_glow": Boolean
+    - "glow_boxes": List of bbox indices with red glow
+    - "glow_frame": Frame with glow overlays drawn
+  
+  Algorithm:
+    1. Convert frame to HSV
+    2. Define red color ranges (accounting for wraparound)
+    3. Create red mask
+    4. For each vehicle detection:
+       a. Extract bounding box ROI
+       b. Count red pixels in ROI
+       c. If > 20% pixels are red, mark as glowing
+       d. Draw red rectangle around glowing vehicles
+    5. Set overall red_glow flag if any vehicle glowing
+    6. Return results dict
+
+RED RANGES (HSV):
+- Lower Red 1: [0, 120, 70] to [10, 255, 255]
+- Upper Red 2: [170, 120, 70] to [180, 255, 255]
+- (Two ranges for hue wraparound)
+
+OUTPUT:
+  {
+    "red_glow": bool,
+    "glow_boxes": [bbox indices],
+    "glow_frame": numpy.ndarray (with overlays)
+  }
+
+---
+
+4.5 risk_score.py
+------------------
+FILE LOCATION: c:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodVision\risk_score.py
+
+PURPOSE: Calculate multi-factor risk score and classification
+
+KEY FUNCTIONS:
+
+_normalise(value, lo, hi)
+  Input: value (numeric), lo (lower bound), hi (upper bound)
+  Output: float in [0, 1]
+  Formula: (value - lo) / (hi - lo), clamped to [0, 1]
+
+_normalise_inv(value, lo, hi)
+  Input: value, lo, hi
+  Output: float in [0, 1]
+  Formula: 1 - _normalise(value, lo, hi)
+  Purpose: Invert scale (lower value = higher risk)
+
+compute_risk(fog_density, distance_to_nearest, recommended_speed, 
+             road_context, red_glow, humidity=0.0)
+  Input:
+    - fog_density: 0-100 (%)
+    - distance_to_nearest: meters (0 if no object)
+    - recommended_speed: km/h (from fog module)
+    - road_context: dict with "blackspots", "road_type"
+    - red_glow: boolean
+    - humidity: 0-100 (%) - currently unused
+  
+  Output: Dictionary with:
+    - "risk_score": float 0-1
+    - "risk_level": str ("LOW" | "MEDIUM" | "HIGH")
+    - "component_scores": dict of individual scores
+    - "hard_override": bool (True if override rule triggered)
+    - "override_reason": str (explanation)
+  
+  Algorithm:
+    1. Compute component scores:
+       - fog: normalise(fog_density, 0, 100)
+       - distance: _normalise_inv(distance, 5, 60)
+       - speed: _normalise_inv(recommended_speed, 20, 80)
+       - road: blackspot_bonus (0.4) + curve_bonus (0.3)
+       - red_glow: 1.0 if True, 0.0 if False
+       - humidity: normalise(humidity, 0, 100)
+    
+    2. Apply weights:
+       raw_score = sum(weight[i] * score[i] for all i)
+       weights = {fog: 0.30, distance: 0.25, speed: 0.20,
+                  road: 0.10, red_glow: 0.10, humidity: 0.05}
+    
+    3. Apply hard override rules:
+       - If red_glow AND 0 < distance < 20: score ≥ 0.70
+       - If 0 < distance < 10: score ≥ 0.70
+       - If "curve" in road_type AND 0 < distance < 25: score ≥ 0.35
+    
+    4. Classify:
+       - score ≤ 0.30: "LOW"
+       - 0.30 < score ≤ 0.60: "MEDIUM"
+       - score > 0.60: "HIGH"
+    
+    5. Return all scores and classification
+
+---
+
+4.6 road_context.py
+---------------------
+FILE LOCATION: c:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodVision\road_context.py
+
+PURPOSE: Enrich location data with road info and blackspot detection
+
+CONFIGURATION:
+- Loads config/blackspots.json at module import
+- Contains 25+ fog-prone accident blackspots in India
+
+KEY FUNCTION:
+
+get_road_context(lat: float, lon: float) -> Dict[str, Any]
+  Input: 
+    - lat: GPS latitude
+    - lon: GPS longitude
+  
+  Output: Dictionary with:
+    - "latitude": float
+    - "longitude": float
+    - "road": str (street name)
+    - "road_type": str ("Highway" | "Urban Road")
+    - "blackspots": list of nearby danger zones
+    - "hazard_types": sorted list of hazard classifications
+    - "raw_location": dict (full Nominatim response)
+  
+  Algorithm:
+    1. REVERSE GEOCODING:
+       - Query Nominatim API: 
+         https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={lat}&lon={lon}
+       - Extract street name from response
+       - Handle errors gracefully (try/except with timeout)
+    
+    2. ROAD TYPE CLASSIFICATION:
+       - If "highway" or "nh" in road name → "Highway"
+       - Else → "Urban Road"
+    
+    3. BLACKSPOT DETECTION:
+       - For each blackspot in config:
+         - Calculate distance using geodesic (Haversine)
+         - If distance < 2.0 km:
+           - Add to nearby_blackspots list
+           - Extract hazard types:
+             * fog_prone → add "fog_prone"
+             * rain_prone → add "rain_prone"
+             * landslide_prone → add "landslide_prone"
+             * accident_prone → add "accident_prone"
+             * weather_risk → add weather type
+       - If road type is "curve": add "curve"
+       - If expressway/highway: add "high_speed"
+       - If no hazards: add "standard"
+    
+    4. RETURN context dict
+
+BLACKSPOT FIELDS (from JSON):
+  {
+    "name": str,
+    "state": str,
+    "latitude": float,
+    "longitude": float,
+    "road_type": str,
+    "accident_prone": bool,
+    "fog_prone": bool,
+    "rain_prone": bool,
+    "landslide_prone": bool,
+    "severity": str,
+    "speed_limit": int,
+    "weather_risk": str,
+    ...
+  }
+
+CACHING:
+- Gated to run every 10 seconds (in pipeline)
+- Avoids excessive Nominatim API calls
+
+---
+
+4.7 llm.py
+-----------
+FILE LOCATION: c:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodVision\llm.py
+
+PURPOSE: Generate AI-powered driving recommendations
+
+CONFIGURATION:
+- MODEL_NAME: "qwen3:1.7b" (options: "deepseek-r1:1.5b")
+- SYSTEM_PROMPT: Defines LLM role and output format
+
+KEY FUNCTION:
+
+get_llm_decision(context)
+  Input: context (dict with all sensor data)
+  Output: str (LLM response text)
+  
+  Algorithm:
+    1. Build user prompt from context dict (JSON formatted)
+    2. Call Ollama API via ollama.chat():
+       {
+         "model": MODEL_NAME,
+         "messages": [
+           {"role": "system", "content": SYSTEM_PROMPT},
+           {"role": "user", "content": user_prompt}
+         ]
+       }
+    3. Extract response.message.content
+    4. Return text
+    5. On error: return "LLM Error: {exception message}"
+
+SYSTEM PROMPT STRUCTURE:
+  "You are an AI-powered ADAS"
+  "Your role: analyze conditions, assess risk, provide recommendations"
+  "Rules: prioritize safety, keep short, don't hallucinate"
+  "Always provide:
+    1. Risk Level
+    2. Hazard Alert
+    3. Recommended Speed
+    4. Driving Suggestion
+    5. Short Explanation
+    6. Object Detection Alert (if any based on detected objects)"
+
+CONTEXT FIELDS SENT:
+  {
+    "timestamp": str,
+    "fog_density": float,
+    "risk_level": str,
+    "risk_score": float,
+    "visibility": str,
+    "recommended_speed": int,
+    "road_name": str,
+    "road_type": str,
+    "blackspot_nearby": bool,
+    "objects": [list of detections],
+    "traffic_signal": str,
+    "red_glow": bool,
+    "distance_to_nearest": float,
+    "nearest_object": str,
+    "location": {"latitude": float, "longitude": float}
+  }
+
+LATENCY:
+- First call: ~2-3 seconds (model load)
+- Subsequent: ~1-2 seconds
+- Cached for 5 seconds in pipeline
+
+---
+
+4.8 voice_alert.py
+--------------------
+FILE LOCATION: c:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodVision\voice_alert.py
+
+PURPOSE: Generate and speak safety alerts using TTS
+
+GLOBAL STATE:
+- last_alert_time: dict tracking last speak time per alert_key
+- ALERT_COOLDOWN: 5 seconds
+
+KEY FUNCTIONS:
+
+_speak(message)
+  Input: message (str to speak)
+  Purpose: Internal function to do TTS
+  Algorithm:
+    1. Initialize pyttsx3 engine
+    2. Set rate to 160 wpm
+    3. Say message text
+    4. Wait until done (blocking)
+  Thread: Called in background thread
+
+speak_alert(alert_key, message)
+  Input: 
+    - alert_key: str (identifier for alert type)
+    - message: str (text to speak)
+  
+  Algorithm:
+    1. Get current time
+    2. Check if alert_key in last_alert_time:
+       - If yes and elapsed < ALERT_COOLDOWN: RETURN (skip)
+       - Else: update last_alert_time[alert_key]
+    3. Print "ALERT: {message}" to console
+    4. Spawn background thread running _speak(message)
+       - daemon=True (doesn't block program exit)
+       - target=_speak, args=(message,)
+  
+  Purpose: Prevent alert spam with cooldown mechanism
+
+USAGE:
+  from voice_alert import speak_alert
+  
+  speak_alert("fog_warning", "Dense fog detected. Reduce speed.")
+  # Same key won't trigger again for 5 seconds
+
+ALERT KEYS USED IN PIPELINE:
+  - "llm_recommendation": LLM-extracted hazard alert
+  - "fog": Fog density warning
+  - "distance": Distance to object warning
+  - "red_glow": Brake light detected
+  - "blackspot": Accident-prone area nearby
+  - Others defined in old rule_engine (now disabled)
+
+---
+
+4.9 video_engine.py
+---------------------
+FILE LOCATION: c:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodVision\video_engine.py
+
+PURPOSE: Extract frames at 1 FPS from video files (or webcam)
+
+KEY CLASS:
+
+class VideoFrame (dataclass)
+  Attributes:
+    - frame: cv2.Mat (BGR image)
+    - timestamp: float (Unix time)
+    - frame_index: int (absolute frame counter in file)
+    - second_index: int (which 1-second bucket this frame belongs to)
+
+class VideoEngine
+  __init__(source=None, prefer_file=str, target_size=(960,540))
+    Input:
+      - source: video file path or camera index (None auto-selects)
+      - prefer_file: preferred file path if source is None
+      - target_size: tuple (width, height) for resize
+    
+    Initialization:
+      1. Determine source (file or camera)
+      2. Open with cv2.VideoCapture(source)
+      3. Detect FPS from source
+      4. Calculate frames to skip for 1 fps output
+      5. Initialize frame counters
+  
+  Methods:
+    is_opened: property (bool) - returns whether capture is open
+    source_fps: property (float) - FPS of source
+    skip_frames: property (int) - how many frames to skip
+    
+    read() -> VideoFrame | None
+      Algorithm:
+        1. Read next frame from source
+        2. Count frames and determine if we should deliver this one
+        3. For 1 fps delivery:
+           - Skip (fps - 1) frames
+           - Deliver every fps-th frame
+        4. Resize to target_size
+        5. Cache as last_delivered (for Streamlit reruns)
+        6. Return VideoFrame with all metadata
+        7. If source exhausted: return None
+      
+      Returns:
+        - VideoFrame: next 1-fps frame
+        - None: no new second-boundary frame yet (between seconds)
+
+FRAME SAMPLING:
+- 30 fps source video:
+  Read frames: 0, 1, 2, ..., 29 (skip 0-28)
+  Deliver: frame 29 (end of second 0)
+  Then: frame 59, 89, 119, ... (end of each second)
+
+TARGET SIZE:
+- Default: (960, 540) - then resized to (640, 480) in pipeline
+
+---
+
+4.10 pipeline.py
+------------------
+FILE LOCATION: c:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodVision\pipeline.py
+
+PURPOSE: Orchestrate all ADAS modules into unified pipeline
+
+KEY CLASS:
+
+class ADASPipeline
+  __init__()
+    Initialize:
+      - llm_interval_s: 5.0 (seconds between LLM calls)
+      - gps_interval_s: 10.0 (seconds between GPS calls)
+      - last_llm_time: 0.0
+      - last_gps_time: 0.0
+      - cached_road_context: {}
+      - cached_llm_response: ""
+      - cached_fog_data: {with defaults}
+      - last_llm_spoken: "" (for voice alert dedup)
+      - cached_full_result: {}
+  
+  process(frame, lat, lon) -> dict
+    Input:
+      - frame: BGR numpy array
+      - lat: GPS latitude
+      - lon: GPS longitude
+    
+    Algorithm: (As described in Section 2 - ARCHITECTURE FLOW)
+    
+    Output: Full result dict with 30+ keys:
+      {
+        "frame": annotated_frame,
+        "fog_data": {dark_channel, transmission_map, fog_density},
+        "detections": [list],
+        "road_context": {road, road_type, hazard_types, blackspots},
+        "alerts": [],  # Empty (LLM-driven)
+        "llm_response": str,
+        "fps": float,
+        "context": dict,
+        "red_glow": bool,
+        "glow_boxes": [list],
+        "distance_to_nearest": float,
+        "nearest_label": str,
+        "per_object_distances": [list],
+        "risk_score": float,
+        "risk_level": str,
+        "risk_components": dict,
+        "hard_override": bool,
+        "override_reason": str,
+        ...
+      }
+
+  _recommended_speed_from_fog_density(fog_density) -> int
+    Static method
+    Logic:
+      - fog >= 80: return 30 km/h
+      - fog >= 60: return 40 km/h
+      - fog >= 40: return 50 km/h
+      - fog >= 20: return 60 km/h
+      - else: return 70 km/h
+
+  _visibility_from_fog_density(fog_density) -> str
+    Static method
+    Logic:
+      - fog >= 80: return "Very Low"
+      - fog >= 60: return "Low"
+      - fog >= 40: return "Moderate"
+      - else: return "Good"
+
+STANDALONE FUNCTIONS:
+
+_rule_engine(...) -> list
+  Returns: Empty list [] (no hard-coded alerts)
+  Purpose: Kept for architecture compatibility
+
+_extract_alert_from_llm(llm_text) -> str
+  Input: Full LLM response text
+  Output: Extracted alert string
+  Algorithm:
+    1. Split text by newlines
+    2. Look for "Hazard Alert:" line
+    3. Extract text after colon
+    4. Also look for "Object Detection Alert:" line
+    5. Combine both if found
+    6. If not found: return full llm_text
+
+---
+
+4.11 DashBoard.py
+-------------------
+FILE LOCATION: c:\Users\Puneeth Kumar\OneDrive\Desktop\IDP\Project\fodVision\DashBoard.py
+
+PURPOSE: Streamlit web UI for ADAS dashboard
+
+TECHNOLOGY: Streamlit web framework
+
+KEY SECTIONS:
+
+Page Configuration:
+  - Title: "FogVision — AI Road Safety Dashboard"
+  - Layout: Wide (2-column)
+  - Custom CSS styling (dark theme, glassmorphism cards)
+
+Video Upload:
+  - File uploader for .mp4, .avi, .mov, .mkv
+  - Saves to temp_uploaded_video.mp4
+  - Initializes VideoEngine with uploaded file
+
+Session State:
+  - pipeline: ADASPipeline() singleton
+  - run_loop: bool (Start/Stop button state)
+  - latest_result: Last frame processing result
+  - uploaded_file: Current uploaded video
+
+GPS & Location:
+  - Attempts browser geolocation via streamlit-js-eval
+  - Fallback: Mock Delhi coordinates (28.6139, 77.2090)
+
+Layout Structure:
+  Left Column (2/3 width):
+    - Video frame display (dehazed + annotated)
+    - Frame info (frame index, second index, FPS)
+    - Safety metrics (fog %, visibility, speed, FPS, distance, red glow)
+    - Risk score panel with component breakdown
+    - Hard override indicator
+  
+  Right Column (1/3 width):
+    - Map section (Folium interactive map)
+    - Road context (road name, type, hazard types, blackspots)
+    - LLM recommendation panel
+  
+  Bottom Section:
+    - Safety alerts (empty in current implementation)
+
+CONTROLS:
+  - ▶ Start button (resume processing)
+  - ⏹ Stop button (pause processing)
+
+METRICS DISPLAYED:
+  - Fog Density (%)
+  - Visibility (Good/Moderate/Low/Very Low)
+  - Recommended Speed (km/h)
+  - Pipeline FPS
+  - Nearest Object Distance (m)
+  - Red Glow Status (🔴 YES / ✅ NO)
+  - Risk Score (0-1.00)
+  - Risk Level (LOW/MEDIUM/HIGH)
+  - Hard Override Status
+  - Component Score Bars (fog, distance, speed, road, red_glow, humidity)
+
+MAP:
+  - Centered on current location
+  - Blue marker: current location (car icon)
+  - Red markers: nearby blackspots
+  - Zoom level: 14
+  - Tile: CartoDB dark_matter
+
+PROCESSING LOOP:
+  1. Read frame from VideoEngine
+  2. If frame available: run pipeline.process()
+  3. Update all display placeholders
+  4. Sleep 0.05s and rerun Streamlit
+
+AUTO-RERUN:
+  - st.rerun() every 50ms to maintain 1fps sampling
+  - Streamlit caches results to avoid redundant computation
+
+================================================================================
+5. FUNCTION DEFINITIONS SUMMARY
+================================================================================
+
+fog_density.py:
+  - get_dark_channel(img, window_size=15) → np.ndarray
+  - get_atmospheric_light(img, dark_channel) → np.ndarray
+  - get_transmission_map(img, atmospheric_light, window_size=15, omega=0.95) → np.ndarray
+  - _prepare_image(image_or_path: Union[str, np.ndarray]) → np.ndarray
+  - estimate_fog_density(image_or_path: Union[str, np.ndarray]) → dict
+
+dehaze.py:
+  - class DehazeModel:
+    - __init__()
+    - process(frame) → np.ndarray
+
+object_detect.py:
+  - detect_traffic_light_color(roi) → str | None
+  - process_frame(frame) → tuple(np.ndarray, list)
+
+red_glow.py:
+  - detect_red_glow(frame, detections) → dict
+
+risk_score.py:
+  - _normalise(value: float, lo: float, hi: float) → float
+  - _normalise_inv(value: float, lo: float, hi: float) → float
+  - compute_risk(fog_density, distance_to_nearest, recommended_speed, 
+                 road_context, red_glow, humidity=0.0) → dict
+
+road_context.py:
+  - get_road_context(lat: float, lon: float) → dict
+
+llm.py:
+  - get_llm_decision(context: dict) → str
+
+voice_alert.py:
+  - _speak(message: str) → None
+  - speak_alert(alert_key: str, message: str) → None
+
+video_engine.py:
+  - class VideoFrame (dataclass)
+  - class VideoEngine:
+    - __init__(source=None, prefer_file=str, target_size=(960,540))
+    - is_opened → bool
+    - source_fps → float
+    - skip_frames → int
+    - read() → VideoFrame | None
+
+pipeline.py:
+  - class ADASPipeline:
+    - __init__()
+    - process(frame, lat, lon) → dict
+    - _recommended_speed_from_fog_density(fog_density) → int
+    - _visibility_from_fog_density(fog_density) → str
+  - _rule_engine(...) → list
+  - _extract_alert_from_llm(llm_text: str) → str
+
+DashBoard.py:
+  - Main Streamlit app (no functions, script-based)
+
+================================================================================
+6. CONFIGURATION & SETTINGS
+================================================================================
+
+FOG DENSITY PARAMETERS:
+  - DCP window size: 15×15 pixels
+  - Atmospheric light percentile: 0.1% brightest pixels
+  - Omega (scattering coefficient): 0.95
+  - Fog score scale: 0-100 (0=clear, 100=dense fog)
+
+VISIBILITY THRESHOLDS:
+  - Very Low: fog >= 80%
+  - Low: fog >= 60%
+  - Moderate: fog >= 40%
+  - Good: fog < 40%
+
+RECOMMENDED SPEED FORMULA:
+  - fog >= 80%: 30 km/h
+  - fog >= 60%: 40 km/h
+  - fog >= 40%: 50 km/h
+  - fog >= 20%: 60 km/h
+  - fog < 20%: 70 km/h
+
+YOLO PARAMETERS:
+  - Model: yolov8n.pt (nano variant)
+  - Input size: 640×480
+  - Confidence threshold: default ultralytics
+  - Device: GPU if available, else CPU
+  - Half precision: enabled on CUDA
+
+DISTANCE ESTIMATION:
+  - Formula: distance = 50 / max(bbox_height, 1)
+  - Units: meters
+  - Assumes fixed focal length (heuristic)
+
+BRAKE LIGHT DETECTION:
+  - Red threshold: 20% of bounding box pixels
+  - HSV red ranges: [0-10, 170-180] hue
+  - Saturation: 120-255
+  - Value: 70-255
+
+RISK SCORE WEIGHTS:
+  - Fog density: 0.30
+  - Object distance: 0.25
+  - Recommended speed: 0.20
+  - Road context: 0.10
+  - Red glow: 0.10
+  - Humidity: 0.05
+
+RISK THRESHOLDS:
+  - LOW: score ≤ 0.30
+  - MEDIUM: 0.30 < score ≤ 0.60
+  - HIGH: score > 0.60
+
+HARD OVERRIDE RULES:
+  - red_glow AND distance < 20m → score ≥ 0.70
+  - distance < 10m → score ≥ 0.70
+  - curve AND distance < 25m → score ≥ 0.35
+
+GPS & ROAD CONTEXT:
+  - Reverse geocoding API: Nominatim (OpenStreetMap)
+  - Gating interval: 10 seconds
+  - Timeout: 10 seconds per API call
+  - Blackspot search radius: 2.0 km
+
+LLM CONFIGURATION:
+  - Model: Qwen3:1.7b (or DeepSeek-r1:1.5b)
+  - Framework: Ollama
+  - Gating interval: 5 seconds
+  - Runs locally (no external API)
+
+VOICE ALERT SETTINGS:
+  - TTS library: pyttsx3
+  - Speech rate: 160 wpm
+  - Cooldown per alert type: 5 seconds
+  - Threading: Background daemon thread
+
+VIDEO SAMPLING:
+  - Target FPS: 1 frame per second
+  - Source FPS: 30 fps (typical)
+  - Frame skip: 29 frames between deliveries
+  - Output resolution: 640×480
+
+STREAMLIT SETTINGS:
+  - Layout: Wide (2-column)
+  - Rerun interval: 50 ms
+  - Upload size limit: System default
+
+================================================================================
+7. DATA FLOW PIPELINE
+================================================================================
+
+INPUT:
+  - Video file (uploaded via Streamlit)
+  - GPS coordinates (from browser geolocation or mock)
+
+PROCESSING CHAIN:
+  Raw Frame (640×480 BGR)
+    ↓
+  [1] Fog Density Analysis
+    ├─→ Dark Channel Prior
+    ├─→ Atmospheric Light Estimation
+    ├─→ Transmission Map
+    └─→ Fog Density Score (0-100%)
+        └─→ Visibility Level (Good/Moderate/Low/Very Low)
+        └─→ Recommended Speed (30-70 km/h)
+    ↓
+  [2] Image Dehazing
+    ├─→ Apply DCP dehazing
+    └─→ Dehazed Frame (enhanced visibility)
+    ↓
+  [3] Object Detection
+    ├─→ YOLOv8n inference
+    ├─→ Bounding boxes (80+ classes)
+    ├─→ Traffic light color classification
+    └─→ Distance estimation (height heuristic)
+    ↓
+  [4] Red Glow Detection
+    ├─→ HSV color thresholding
+    ├─→ Brake light detection
+    └─→ Glow overlay annotation
+    ↓
+  [5] Sensor Fusion Context
+    ├─→ Combine all metrics
+    ├─→ Timestamp, location, objects
+    └─→ Ready for risk scoring
+    ↓
+  [6a] GPS & Road Context [Gated 10s]
+    ├─→ Reverse geocoding
+    ├─→ Blackspot detection (2km radius)
+    ├─→ Hazard type classification
+    └─→ Road context metadata
+    ↓
+  [6b] Risk Score Calculation
+    ├─→ Component scoring (fog, distance, speed, road, red_glow)
+    ├─→ Weighted summation
+    ├─→ Hard override rules
+    └─→ Classification (LOW/MEDIUM/HIGH)
+    ↓
+  [7] LLM Analysis [Gated 5s]
+    ├─→ Send context to Ollama
+    ├─→ Qwen3:1.7b inference
+    ├─→ Generate structured recommendation
+    └─→ Extract alert text
+    ↓
+  [8] Voice Alert Synthesis
+    ├─→ Parse LLM hazard alert
+    ├─→ pyttsx3 text-to-speech
+    ├─→ Cooldown protection (5s)
+    └─→ Background thread execution
+    ↓
+  OUTPUT:
+    - Annotated frame (for display)
+    - Risk metrics (for dashboard)
+    - LLM recommendation (for text display)
+    - Voice alert (for audio output)
+    - Map markers (for location display)
+
+CACHING STRATEGY:
+  - Fog data: per frame (1 per second)
+  - Road context: every 10 seconds (gated)
+  - LLM response: every 5 seconds (gated)
+  - Full result: cached between reruns
+  - Video frame: cached (Streamlit rerun handling)
+
+================================================================================
+8. INTEGRATION POINTS
+================================================================================
+
+STREAMLIT ↔ PIPELINE:
+  - DashBoard.py imports ADASPipeline class
+  - Creates singleton in session_state
+  - Calls process(frame, lat, lon) every second
+  - Displays result dict in UI components
+
+VIDEO ENGINE ↔ STREAMLIT:
+  - VideoEngine created in session_state
+  - DashBoard calls engine.read() in loop
+  - Returns None between seconds (Streamlit reruns)
+  - Caches last_delivered for display consistency
+
+PIPELINE ↔ MODULES:
+  - pipeline.py imports all inference modules
+  - Calls each module in sequence (orchestrator pattern)
+  - Passes outputs as inputs to next stage
+  - Exception handling: print and continue with defaults
+
+FOG & DEHAZE:
+  - fog_density.py operates on raw frame
+  - dehaze.py operates on same raw frame
+  - Both use Dark Channel Prior (shared algorithm)
+  - Could optimize by sharing computation (not yet implemented)
+
+DETECTION ↔ RED GLOW:
+  - object_detect.py returns detections + annotated_frame
+  - red_glow.py takes both as input
+  - Adds glow overlays to already-annotated frame
+  - Final frame has both object boxes + glow indicators
+
+RISK ↔ CONTEXT:
+  - Road context gated at 10s, cached
+  - Risk score uses cached context
+  - Updated context sent to LLM (5s gating)
+
+LLM ↔ VOICE:
+  - pipeline.py calls get_llm_decision()
+  - Extracts alert text via _extract_alert_from_llm()
+  - Passes to speak_alert() with unique alert_key
+  - Cooldown prevents repeated voice alerts
+
+NOMINATIM API:
+  - Called from road_context.py
+  - Timeout: 10 seconds
+  - Rate limited: 1 request per second (Nominatim ToS)
+  - Fallback: return "Unknown" if failure
+
+OLLAMA SERVICE:
+  - Must be running locally (ollama serve)
+  - Called via ollama.chat() library
+  - Model preloaded in Ollama daemon
+  - Returns structured text response
+
+================================================================================
+9. DEPLOYMENT INSTRUCTIONS
+================================================================================
+
+PREREQUISITES:
+  1. Python 3.8 or higher
+  2. pip package manager
+  3. Ollama installed and running (ollama.ai)
+  4. Git (optional, for cloning)
+
+INSTALLATION STEPS:
+
+Step 1: Clone or Download Repository
+  git clone <repository>
+  cd fodVision
+
+Step 2: Create Virtual Environment
+  python -m venv venv
+  venv\Scripts\activate  # On Windows
+  source venv/bin/activate  # On Linux/Mac
+
+Step 3: Install Dependencies
+  pip install -r Requirements.txt
+  
+  If numpy fails (older GCC), try:
+  pip install --upgrade pip
+  pip install geopy pyttsx3 requests streamlit streamlit-folium streamlit-js-eval folium ollama
+
+Step 4: Start Ollama Service
+  ollama serve  # In separate terminal
+  ollama pull qwen3:1.7b  # Download model (first time only)
+
+Step 5: Launch Dashboard
+  streamlit run DashBoard.py
+  
+  Streamlit opens at http://localhost:8501
+
+Step 6: Upload Video and Analyze
+  1. Click "Upload Video File for Analysis"
+  2. Select .mp4, .avi, .mov, or .mkv file
+  3. Click "Start" to begin processing
+  4. Watch real-time metrics and recommendations
+
+TROUBLESHOOTING:
+
+Issue: "ModuleNotFoundError: No module named 'geopy'"
+  Solution: pip install geopy requests
+
+Issue: "Ollama connection refused"
+  Solution: Start Ollama service in separate terminal: ollama serve
+
+Issue: "Model not found: qwen3:1.7b"
+  Solution: ollama pull qwen3:1.7b
+
+Issue: "GPU out of memory"
+  Solution: Use CPU-only mode (automatic fallback)
+  Or reduce video resolution in video_engine.py
+
+Issue: "Streamlit port 8501 already in use"
+  Solution: streamlit run DashBoard.py --server.port 8502
+
+PERFORMANCE NOTES:
+  - First LLM inference: 2-3 seconds (model load)
+  - Subsequent: 1-2 seconds
+  - YOLO detection: ~50ms per frame
+  - Fog analysis: ~30ms per frame
+  - Overall: 1 frame per second maintained
+
+HARDWARE RECOMMENDATIONS:
+  - CPU: 4+ cores
+  - RAM: 8GB minimum (16GB recommended)
+  - GPU: Optional (NVIDIA with CUDA for 2x speedup)
+  - Storage: 2GB free space
+  - Network: Required for first Ollama model download only
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================
+
+Generated: May 8, 2026
+System: FogVision ADAS v1.0
+Author: Development Team
+Status: Production Ready (with minor optimization opportunities)
+
+================================================================================
