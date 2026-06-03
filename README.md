@@ -147,6 +147,14 @@ python -m streamlit run DashBoard.py
 
 ---
 
+## 📦 Local Folders (Excluded from Git)
+
+The following folders are used locally for algorithm execution and model training but are excluded from Git tracking to bypass file size limits:
+- **`PyFADE/`:** Fast and Deep Fog visibility analysis sub-library. Contains core pixel calculations and statistical models for weather classification, which are wrapped into `fog_density.py` and `fog_aware.py` inside the main application.
+- **`Adonet/`:** Contains alternative dehazing models and configs (e.g., Fast Filter Adaptive methods) along with heavy `.pk` training weight files (such as `ots_train_ffa_3_19.pk` and `its_train_ffa_3_19.pk`) used for comparison and evaluation benchmarks.
+
+---
+
 ## ⚙️ Testing & Verification
 You can verify the pipeline logic and distance overrides using the automated test suite script:
 ```powershell

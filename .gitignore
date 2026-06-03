@@ -62,3 +62,6 @@ Thumbs.db
 venv/
 __pycache__/
 *.pyc
+*.pk
+Adonet/
+PyFADE/
