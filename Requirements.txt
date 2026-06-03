@@ -16,9 +16,9 @@ torchvision==0.17.2
 python-dotenv==1.0.1
 geopy==2.4.0
 pyttsx3==2.90
-ollama==0.1.9
 streamlit==1.31.1
 streamlit-folium==0.8.0
 streamlit-js-eval==0.1.1
 folium==0.14.0
 requests==2.31.0
+ollama==0.1.9

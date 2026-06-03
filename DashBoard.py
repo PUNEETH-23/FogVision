@@ -53,28 +53,28 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Barlow+Condensed:wght@400;600;700;800&display=swap');
 
     :root {
-        --bg-base:       #F5F5F5;
-        --bg-panel:      #DFF1F1;
-        --bg-card:       #BBD5DA;
-        --bg-card-inner: #CDEAEA;
-        --accent:        #FF0000;
-        --accent-soft:   rgba(255,0,0,0.08);
-        --accent-mid:    rgba(255,0,0,0.18);
-        --safe:          #00875A;
-        --safe-bg:       rgba(0,135,90,0.08);
-        --warn:          #C47700;
-        --warn-bg:       rgba(196,119,0,0.08);
-        --danger:        #FF0000;
-        --danger-bg:     rgba(255,0,0,0.07);
-        --teal-dark:     #2A6E76;
-        --teal-mid:      #4A8E96;
-        --teal-light:    #76B0B8;
-        --text-primary:  #1A2B2E;
-        --text-secondary:#3A5A60;
-        --text-muted:    #6A9098;
-        --text-dim:      #9ABEC4;
-        --border:        rgba(42,110,118,0.15);
-        --border-strong: rgba(42,110,118,0.30);
+        --bg-base:       #0A1128;
+        --bg-panel:      #101F42;
+        --bg-card:       #1C2D5A;
+        --bg-card-inner: #15244C;
+        --accent:        #F59E0B;
+        --accent-soft:   rgba(245,158,11,0.08);
+        --accent-mid:    rgba(245,158,11,0.18);
+        --safe:          #10B981;
+        --safe-bg:       rgba(16,185,129,0.08);
+        --warn:          #F59E0B;
+        --warn-bg:       rgba(245,158,11,0.08);
+        --danger:        #EF4444;
+        --danger-bg:     rgba(239,68,68,0.07);
+        --teal-dark:     #06B6D4;
+        --teal-mid:      #22D3EE;
+        --teal-light:    #00F0FF;
+        --text-primary:  #F3F4F6;
+        --text-secondary:#E2E8F0;
+        --text-muted:    #94A3B8;
+        --text-dim:      #64748B;
+        --border:        rgba(6,182,212,0.15);
+        --border-strong: rgba(6,182,212,0.30);
         --mono:          'DM Mono', monospace;
         --radius:        6px;
     }
@@ -373,15 +373,15 @@ st.markdown(
 
     /* ── LLM CARD — ENHANCED ── */
     .llm-card-hero {
-        background: linear-gradient(135deg, #1A2B2E 0%, #2A6E76 100%);
+        background: linear-gradient(135deg, #101F42 0%, #06B6D4 100%);
         border: 2px solid var(--teal-dark);
         border-radius: var(--radius);
         padding: 20px 22px;
         font-size: 0.88rem;
         line-height: 1.85;
-        color: #DFF1F1;
+        color: #F3F4F6;
         font-family: 'DM Sans', sans-serif;
-        box-shadow: 0 4px 20px rgba(42,110,118,0.22);
+        box-shadow: 0 4px 20px rgba(6,182,212,0.22);
         margin-bottom: 14px;
         position: relative;
         overflow: hidden;
@@ -398,17 +398,17 @@ st.markdown(
         gap: 10px;
         margin-bottom: 14px;
         padding-bottom: 10px;
-        border-bottom: 1px solid rgba(223,241,241,0.18);
+        border-bottom: 1px solid rgba(6,182,212,0.18);
     }
     .llm-card-hero-badge {
-        background: rgba(255,0,0,0.18);
-        border: 1px solid rgba(255,0,0,0.40);
+        background: rgba(245,158,11,0.18);
+        border: 1px solid rgba(245,158,11,0.40);
         border-radius: 3px;
         padding: 3px 10px;
         font-family: 'DM Mono', monospace;
         font-size: 0.58rem;
         letter-spacing: 0.18em;
-        color: #FFAAAA;
+        color: #FCD34D;
         text-transform: uppercase;
     }
     .llm-card-hero-title {
@@ -416,7 +416,7 @@ st.markdown(
         font-size: 0.85rem;
         font-weight: 700;
         letter-spacing: 0.18em;
-        color: #DFF1F1;
+        color: #F3F4F6;
         text-transform: uppercase;
         flex: 1;
     }
@@ -425,7 +425,7 @@ st.markdown(
         gap: 10px;
         margin: 8px 0;
         align-items: flex-start;
-        background: rgba(223,241,241,0.06);
+        background: rgba(6,182,212,0.06);
         border-radius: 4px;
         padding: 7px 10px;
     }
@@ -433,18 +433,18 @@ st.markdown(
         font-family: 'Barlow Condensed', sans-serif;
         font-size: 0.78rem;
         font-weight: 800;
-        color: #FF8080;
+        color: #FCD34D;
         min-width: 20px;
         padding-top: 2px;
         flex-shrink: 0;
     }
     .llm-text  {
         flex: 1;
-        color: #DFF1F1;
+        color: #F3F4F6;
         font-size: 0.86rem;
         line-height: 1.65;
     }
-    .llm-para  { margin: 6px 0; color: #DFF1F1; font-size: 0.86rem; }
+    .llm-para  { margin: 6px 0; color: #F3F4F6; font-size: 0.86rem; }
     .llm-waiting {
         color: rgba(223,241,241,0.45);
         font-family: 'DM Mono', monospace;
@@ -552,18 +552,25 @@ st.markdown(
 # ─────────────────────────────────────────────────────────────────────────────
 # SESSION STATE INITIALISATION
 # ─────────────────────────────────────────────────────────────────────────────
+# SESSION STATE INITIALISATION
+# ─────────────────────────────────────────────────────────────────────────────
 if "uploaded_file"  not in st.session_state: st.session_state.uploaded_file  = None
 if "pipeline"       not in st.session_state: st.session_state.pipeline       = None
 if "video_engine"   not in st.session_state: st.session_state.video_engine   = None
 if "run_loop"       not in st.session_state: st.session_state.run_loop       = False
 if "latest_result"  not in st.session_state: st.session_state.latest_result  = None
+if "input_mode"     not in st.session_state: st.session_state.input_mode     = "Upload Video"
+if "live_source"    not in st.session_state: st.session_state.live_source    = "0"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HEADER  (always visible)
 # ─────────────────────────────────────────────────────────────────────────────
-is_active = st.session_state.uploaded_file is not None and st.session_state.run_loop
+is_active = st.session_state.run_loop and st.session_state.video_engine is not None
 status_dot_html = '<span class="status-dot"></span>' if is_active else '<span class="status-dot-idle"></span>'
-status_label    = "SYSTEM ACTIVE" if is_active else "AWAITING VIDEO INPUT"
+if is_active:
+    status_label = "SYSTEM ACTIVE - VIDEO" if st.session_state.input_mode == "Upload Video" else "SYSTEM ACTIVE - LIVE FEED"
+else:
+    status_label = "AWAITING VIDEO INPUT" if st.session_state.input_mode == "Upload Video" else "AWAITING LIVE FEED CONNECTION"
 
 st.markdown(
     f"""
@@ -585,34 +592,92 @@ st.markdown(
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# VIDEO UPLOAD  (always visible)
+# INPUT SOURCE CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
-uploaded_file = st.file_uploader(
-    "▸  Upload Video for Analysis",
-    type=["mp4", "avi", "mov", "mkv"],
-    help="MP4 / AVI / MOV / MKV — the system extracts 1 frame per second for analysis.",
+input_mode = st.radio(
+    "▸  Select Input Source",
+    options=["Upload Video", "Live Feed (Sensor + USB Cam/DroidCam)"],
+    index=0 if st.session_state.input_mode == "Upload Video" else 1,
+    horizontal=True,
 )
 
-if uploaded_file is not None and uploaded_file != st.session_state.uploaded_file:
-    st.session_state.uploaded_file = uploaded_file
-    temp_video_path = "temp_uploaded_video.mp4"
-    with open(temp_video_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    st.session_state.video_engine  = VideoEngine(source=temp_video_path)
-    st.session_state.pipeline      = ADASPipeline()
+if input_mode != st.session_state.input_mode:
+    st.session_state.input_mode = input_mode
+    # Release previous video engine if switching modes
+    if st.session_state.video_engine is not None:
+        st.session_state.video_engine.release()
+        st.session_state.video_engine = None
+    st.session_state.run_loop = False
     st.session_state.latest_result = None
-    st.session_state.run_loop      = True   # auto-start on upload
     st.rerun()
 
+if st.session_state.input_mode == "Upload Video":
+    uploaded_file = st.file_uploader(
+        "▸  Upload Video for Analysis",
+        type=["mp4", "avi", "mov", "mkv"],
+        help="MP4 / AVI / MOV / MKV — the system extracts 1 frame per second for analysis.",
+    )
+
+    if uploaded_file is not None and uploaded_file != st.session_state.uploaded_file:
+        st.session_state.uploaded_file = uploaded_file
+        temp_video_path = "temp_uploaded_video.mp4"
+        with open(temp_video_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        st.session_state.video_engine  = VideoEngine(source=temp_video_path)
+        st.session_state.pipeline      = ADASPipeline()
+        st.session_state.latest_result = None
+        st.session_state.run_loop      = True   # auto-start on upload
+        st.rerun()
+else:
+    live_c1, live_c2 = st.columns([3, 1])
+    with live_c1:
+        live_source_input = st.text_input(
+            "▸  USB Webcam Index or IP Camera URL (ESP32/DroidCam)",
+            value=st.session_state.live_source,
+            help="E.g., 0 for default USB webcam, 1 for secondary webcam, or http://192.168.1.100/stream",
+        )
+    with live_c2:
+        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+        connect_btn = st.button("🔌 CONNECT FEED")
+
+    if connect_btn:
+        st.session_state.live_source = live_source_input
+        # Parse live source (integer if all digits, else keep string)
+        if live_source_input.isdigit():
+            actual_source = int(live_source_input)
+        else:
+            actual_source = live_source_input
+
+        # Re-initialize engine and pipeline
+        if st.session_state.video_engine is not None:
+            st.session_state.video_engine.release()
+
+        with st.spinner("Connecting to live feed..."):
+            try:
+                engine = VideoEngine(source=actual_source)
+                if engine.is_opened:
+                    st.session_state.video_engine = engine
+                    st.session_state.pipeline = ADASPipeline()
+                    st.session_state.latest_result = None
+                    st.session_state.run_loop = True
+                    st.success("Connected to feed successfully!")
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.error("❌ Failed to open live feed source. Please verify it is active and reachable.")
+            except Exception as e:
+                st.error(f"❌ Connection error: {e}")
+
 # ─────────────────────────────────────────────────────────────────────────────
-# CONTROLS  (always visible, disabled until a file is loaded)
+# CONTROLS  (always visible, disabled until a source is connected)
 # ─────────────────────────────────────────────────────────────────────────────
+feed_active = st.session_state.video_engine is not None
 ctrl_c1, ctrl_c2, ctrl_c3 = st.columns([1, 1, 10])
 with ctrl_c1:
-    if st.button("▶ START", disabled=st.session_state.uploaded_file is None):
+    if st.button("▶ START", disabled=not feed_active):
         st.session_state.run_loop = True
 with ctrl_c2:
-    if st.button("⏹ STOP", disabled=st.session_state.uploaded_file is None):
+    if st.button("⏹ STOP", disabled=not feed_active):
         st.session_state.run_loop = False
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -633,10 +698,11 @@ except Exception:
 # PIPELINE READY FLAG
 # ─────────────────────────────────────────────────────────────────────────────
 pipeline_ready = (
-    st.session_state.uploaded_file is not None
-    and st.session_state.video_engine is not None
+    st.session_state.video_engine is not None
     and st.session_state.pipeline is not None
 )
+if st.session_state.input_mode == "Upload Video":
+    pipeline_ready = pipeline_ready and st.session_state.uploaded_file is not None
 
 # ─────────────────────────────────────────────────────────────────────────────
 # FRAME ACQUISITION & PROCESSING
@@ -653,9 +719,13 @@ if pipeline_ready:
     else:
         video_frame = engine.read()
         if video_frame is None:
-            st.session_state.run_loop = False   # end of video
+            if st.session_state.input_mode == "Upload Video":
+                st.session_state.run_loop = False   # end of video
+            else:
+                st.warning("⚠️ Live feed frame drop / connection timeout.")
         elif st.session_state.run_loop:
-            st.session_state.latest_result = pipeline.process(video_frame.frame, lat, lon)
+            is_video_mode = (st.session_state.input_mode == "Upload Video")
+            st.session_state.latest_result = pipeline.process(video_frame.frame, lat, lon, is_video=is_video_mode)
 
 latest_result = st.session_state.latest_result
 
@@ -739,12 +809,13 @@ with left_col:
                 unsafe_allow_html=True,
             )
     else:
+        idle_text = "CONNECT A LIVE FEED TO BEGIN" if st.session_state.input_mode != "Upload Video" else "UPLOAD A VIDEO TO BEGIN ANALYSIS"
         st.markdown(
-            '<div class="idle-placeholder">'
-            '<div class="idle-icon">⬡</div>'
-            '<div>UPLOAD A VIDEO TO BEGIN ANALYSIS</div>'
-            '<div style="font-size:0.6rem;opacity:0.5;letter-spacing:0.12em;margin-top:4px;">PIPELINE STANDBY</div>'
-            '</div>',
+            f'<div class="idle-placeholder">'
+            f'<div class="idle-icon">⬡</div>'
+            f'<div>{idle_text}</div>'
+            f'<div style="font-size:0.6rem;opacity:0.5;letter-spacing:0.12em;margin-top:4px;">PIPELINE STANDBY</div>'
+            f'</div>',
             unsafe_allow_html=True,
         )
 
@@ -755,10 +826,10 @@ with left_col:
     visibility = fog_data.get("visibility",        "—")
     rec_speed  = fog_data.get("recommended_speed", 0)
 
-    fog_color  = '#FF0000' if fog_dens > 60 else '#C47700' if fog_dens > 30 else '#00875A'
-    dist_color = '#FF0000' if 0 < dist_m < 15 else '#C47700' if 0 < dist_m < 30 else '#2A6E76'
+    fog_color  = 'var(--danger)' if fog_dens > 60 else 'var(--warn)' if fog_dens > 30 else 'var(--safe)'
+    dist_color = 'var(--danger)' if 0 < dist_m < 15 else 'var(--warn)' if 0 < dist_m < 30 else 'var(--teal-dark)'
     dist_val   = "—" if dist_m == 0 else f"{dist_m:.0f}m"
-    rg_color   = '#FF0000' if red_glow else '#00875A'
+    rg_color   = 'var(--danger)' if red_glow else 'var(--safe)'
     rg_label   = "🔴 ACTIVE" if red_glow else "✅ CLEAR"
 
     st.markdown(
@@ -767,14 +838,14 @@ with left_col:
         f'<div class="metric-tile"><div class="metric-label">FOG DENSITY</div>'
         f'<div class="metric-value" style="color:{fog_color}">{fog_dens:.1f}%</div></div>'
         f'<div class="metric-tile"><div class="metric-label">VISIBILITY</div>'
-        f'<div class="metric-value" style="font-size:1rem;color:#2A6E76">{visibility}</div></div>'
+        f'<div class="metric-value" style="font-size:1rem;color:var(--teal-dark)">{visibility}</div></div>'
         f'<div class="metric-tile"><div class="metric-label">REC. SPEED</div>'
-        f'<div class="metric-value">{rec_speed}</div><div class="metric-sub">km/h</div></div>'
+        f'<div class="metric-value" style="color:var(--accent)">{rec_speed}</div><div class="metric-sub">km/h</div></div>'
         f'<div class="metric-tile"><div class="metric-label">PIPELINE FPS</div>'
-        f'<div class="metric-value">{fps}</div></div>'
+        f'<div class="metric-value" style="color:var(--teal-mid)">{fps}</div></div>'
         f'<div class="metric-tile"><div class="metric-label">NEAREST OBJ</div>'
         f'<div class="metric-value" style="color:{dist_color}">{dist_val}</div>'
-        f'<div class="metric-sub">{near_label if near_label != "none" else ""}</div></div>'
+        f'<div class="metric-sub" style="color:var(--text-muted)">{near_label if near_label != "none" else ""}</div></div>'
         f'<div class="metric-tile"><div class="metric-label">RED GLOW</div>'
         f'<div class="metric-value" style="color:{rg_color};font-size:0.85rem">{rg_label}</div></div>'
         f'</div>',
@@ -784,29 +855,29 @@ with left_col:
     # ── RISK SCORE ENGINE ──
     risk_css    = {"LOW": "risk-LOW", "MEDIUM": "risk-MEDIUM", "HIGH": "risk-HIGH"}.get(risk_level, "risk-LOW")
     score_pct   = int(risk_score * 100)
-    score_color = "#FF0000" if score_pct > 60 else "#C47700" if score_pct > 30 else "#00875A"
+    score_color = "var(--danger)" if score_pct > 60 else "var(--warn)" if score_pct > 30 else "var(--safe)"
 
     comp_bars_html = ""
     for k, v in risk_comps.items():
         pct   = int(v * 100)
-        color = "#FF0000" if pct > 60 else "#C47700" if pct > 30 else "#00875A"
+        color = "var(--danger)" if pct > 60 else "var(--warn)" if pct > 30 else "var(--safe)"
         comp_bars_html += (
             f'<div class="comp-bar-row">'
             f'<span class="comp-bar-label">{_html.escape(str(k))}</span>'
             f'<div class="comp-bar-track"><div class="comp-bar-fill" style="width:{pct}%;background:{color};"></div></div>'
-            f'<span class="comp-bar-val">{pct}%</span>'
+            f'<span class="comp-bar-val" style="color:var(--text-muted);">{pct}%</span>'
             f'</div>'
         )
 
     override_html = ""
     if override and override_r:
         override_html = (
-            f'<div style="margin-top:10px;padding:8px 12px;background:rgba(255,0,0,0.06);'
-            f'border:1px solid rgba(255,0,0,0.25);border-radius:5px;font-size:0.76rem;color:#8B0000;">'
+            f'<div style="margin-top:10px;padding:8px 12px;background:var(--danger-bg);'
+            f'border:1px solid var(--border-strong);border-radius:5px;font-size:0.76rem;color:var(--danger);">'
             f'⚠ HARD OVERRIDE: {_html.escape(override_r)}</div>'
         )
 
-    ov_color = '#FF0000' if override else '#00875A'
+    ov_color = 'var(--danger)' if override else 'var(--safe)'
     ov_label = "YES ⚠" if override else "NO"
 
     st.markdown(
@@ -849,25 +920,43 @@ with right_col:
     st.markdown('<div class="panel-title">AI RECOMMENDATION ENGINE</div>', unsafe_allow_html=True)
 
     if llm_response:
-        clean_llm = re.sub(r"<think>.*?</think>", "", llm_response, flags=re.DOTALL).strip()
-
-        inner_html = ""
-        for line in clean_llm.split("\n"):
-            line = line.strip()
-            if not line:
-                continue
-            match = re.match(r"^(\d+)\.\s+(.*)", line)
-            if match:
-                num  = _html.escape(match.group(1))
-                text = _html.escape(match.group(2))
-                inner_html += (
-                    f'<div class="llm-row">'
-                    f'<span class="llm-num">{num}.</span>'
-                    f'<span class="llm-text">{text}</span>'
-                    f'</div>'
-                )
-            else:
-                inner_html += f'<p class="llm-para">{_html.escape(line)}</p>'
+        if isinstance(llm_response, dict):
+            inner_html = ""
+            row_idx = 1
+            for label, key in [
+                ("Hazard Alert", "hazard_alert"),
+                ("Recommended Speed", "recommended_speed"),
+                ("Driving Suggestion", "driving_suggestion"),
+                ("Explanation", "short_explanation"),
+            ]:
+                val = llm_response.get(key)
+                if val:
+                    inner_html += (
+                        f'<div class="llm-row">'
+                        f'<span class="llm-num">{row_idx}.</span>'
+                        f'<span class="llm-text"><b>{_html.escape(label)}:</b> {_html.escape(str(val))}</span>'
+                        f'</div>'
+                    )
+                    row_idx += 1
+        else:
+            clean_llm = re.sub(r"<think>.*?</think>", "", llm_response, flags=re.DOTALL).strip()
+            inner_html = ""
+            for line in clean_llm.split("\n"):
+                line = line.strip()
+                if not line:
+                    continue
+                match = re.match(r"^(\d+)\.\s+(.*)", line)
+                if match:
+                    num  = _html.escape(match.group(1))
+                    text = _html.escape(match.group(2))
+                    inner_html += (
+                        f'<div class="llm-row">'
+                        f'<span class="llm-num">{num}.</span>'
+                        f'<span class="llm-text">{text}</span>'
+                        f'</div>'
+                    )
+                else:
+                    inner_html += f'<p class="llm-para">{_html.escape(line)}</p>'
 
         # Determine risk level CSS class
         risk_class_map = {"LOW": "risk-LOW", "MEDIUM": "risk-MEDIUM", "HIGH": "risk-HIGH"}
@@ -1003,7 +1092,7 @@ with right_col:
             conf       = d.get("confidence", 0.0)
             dist       = d.get("distance",   0.0)
             tl         = _html.escape(str(d.get("traffic_light_color") or "—"))
-            conf_color = "#00875A" if conf > 0.7 else "#C47700" if conf > 0.4 else "#FF0000"
+            conf_color = "var(--safe)" if conf > 0.7 else "var(--warn)" if conf > 0.4 else "var(--danger)"
             rows_html += (
                 f'<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;'
                 f'padding:6px 0;border-bottom:1px solid var(--border);'

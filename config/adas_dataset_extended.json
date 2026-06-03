@@ -1,0 +1,1014 @@
+[
+  {
+    "id": "C001",
+    "scenario": "Critical fog + collision imminent + braking",
+    "input": {
+      "fog_density": 96,
+      "nearest_object_m": 3,
+      "nearest_object_label": "truck",
+      "red_glow": true,
+      "road_type": "highway",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 80
+    },
+    "output": {
+      "risk_level": "CRITICAL",
+      "hazard_alert": "Braking truck 3m ahead in critical fog",
+      "recommended_speed": "0 km/h",
+      "driving_suggestion": "Emergency brake immediately, do not swerve",
+      "short_explanation": "Truck braking at 3m in near-zero visibility demands immediate full stop",
+      "priority_hazard": "collision",
+      "voice_alert": "Emergency brake, truck very close",
+      "confidence": 0.98
+    }
+  },
+  {
+    "id": "C002",
+    "scenario": "Critical fog + pedestrian crossing",
+    "input": {
+      "fog_density": 93,
+      "nearest_object_m": 4,
+      "nearest_object_label": "pedestrian",
+      "red_glow": false,
+      "road_type": "urban",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 45
+    },
+    "output": {
+      "risk_level": "CRITICAL",
+      "hazard_alert": "Pedestrian 4m ahead in near-zero visibility",
+      "recommended_speed": "0 km/h",
+      "driving_suggestion": "Brake hard, protect pedestrian immediately",
+      "short_explanation": "Pedestrian at 4m in critical fog is highest-severity collision risk",
+      "priority_hazard": "collision",
+      "voice_alert": "Pedestrian ahead, stop now",
+      "confidence": 0.97
+    }
+  },
+  {
+    "id": "C003",
+    "scenario": "Critical fog + winding mountain road + no object",
+    "input": {
+      "fog_density": 91,
+      "nearest_object_m": 999,
+      "nearest_object_label": "none",
+      "red_glow": false,
+      "road_type": "curve",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 60
+    },
+    "output": {
+      "risk_level": "CRITICAL",
+      "hazard_alert": "Critical fog on blind curve — road invisible",
+      "recommended_speed": "15 km/h",
+      "driving_suggestion": "Slow drastically, hug lane center, use hazard lights",
+      "short_explanation": "Blind curve in critical fog creates unseen collision and off-road risk",
+      "priority_hazard": "visibility",
+      "voice_alert": "Critical fog on curve, slow down",
+      "confidence": 0.95
+    }
+  },
+  {
+    "id": "C004",
+    "scenario": "Critical fog + car at 5m + stable trend",
+    "input": {
+      "fog_density": 90,
+      "nearest_object_m": 5,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "stable",
+      "current_speed_kmh": 70
+    },
+    "output": {
+      "risk_level": "CRITICAL",
+      "hazard_alert": "Car 5m ahead at highway speed in critical fog",
+      "recommended_speed": "20 km/h",
+      "driving_suggestion": "Brake firmly and reduce speed to safe crawl",
+      "short_explanation": "5m gap at highway speed in critical fog is near-zero reaction distance",
+      "priority_hazard": "collision",
+      "voice_alert": "Car too close, brake now",
+      "confidence": 0.96
+    }
+  },
+  {
+    "id": "C005",
+    "scenario": "Critical fog + motorcycle + worsening trend",
+    "input": {
+      "fog_density": 94,
+      "nearest_object_m": 6,
+      "nearest_object_label": "motorcycle",
+      "red_glow": true,
+      "road_type": "urban",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 50
+    },
+    "output": {
+      "risk_level": "CRITICAL",
+      "hazard_alert": "Braking motorcycle 6m ahead in critical fog",
+      "recommended_speed": "10 km/h",
+      "driving_suggestion": "Brake gently to avoid rear collision with motorcycle",
+      "short_explanation": "Motorcycles stop faster; braking glow at 6m in critical fog demands gentle firm braking",
+      "priority_hazard": "collision",
+      "voice_alert": "Motorcycle braking ahead, brake gently",
+      "confidence": 0.95
+    }
+  },
+  {
+    "id": "H001",
+    "scenario": "Dense fog + braking car at 8m on highway",
+    "input": {
+      "fog_density": 84,
+      "nearest_object_m": 8,
+      "nearest_object_label": "car",
+      "red_glow": true,
+      "road_type": "highway",
+      "fog_trend": "stable",
+      "current_speed_kmh": 90
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Braking car 8m ahead in dense fog at high speed",
+      "recommended_speed": "25 km/h",
+      "driving_suggestion": "Brake firmly and drop speed significantly",
+      "short_explanation": "8m gap at 90 km/h with brake lights active in dense fog is high collision risk",
+      "priority_hazard": "braking",
+      "voice_alert": "Hard brake, car stopping ahead",
+      "confidence": 0.93
+    }
+  },
+  {
+    "id": "H002",
+    "scenario": "Dense fog + truck at 9m + worsening trend",
+    "input": {
+      "fog_density": 80,
+      "nearest_object_m": 9,
+      "nearest_object_label": "truck",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 75
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Large truck 9m ahead in worsening dense fog",
+      "recommended_speed": "30 km/h",
+      "driving_suggestion": "Slow down and increase gap — fog is worsening",
+      "short_explanation": "Worsening fog escalates proximity risk with large vehicle at 9m",
+      "priority_hazard": "collision",
+      "voice_alert": "Truck close ahead, reduce speed",
+      "confidence": 0.91
+    }
+  },
+  {
+    "id": "H003",
+    "scenario": "Dense fog + curve + braking",
+    "input": {
+      "fog_density": 76,
+      "nearest_object_m": 14,
+      "nearest_object_label": "car",
+      "red_glow": true,
+      "road_type": "curve",
+      "fog_trend": "stable",
+      "current_speed_kmh": 55
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Braking car on foggy curve at 14m",
+      "recommended_speed": "30 km/h",
+      "driving_suggestion": "Reduce speed before curve entry, stay in lane",
+      "short_explanation": "Braking on a curve in dense fog compounds lateral and collision risk",
+      "priority_hazard": "braking",
+      "voice_alert": "Brake ahead on curve, slow down",
+      "confidence": 0.90
+    }
+  },
+  {
+    "id": "H004",
+    "scenario": "Dense fog + urban + pedestrians likely",
+    "input": {
+      "fog_density": 79,
+      "nearest_object_m": 20,
+      "nearest_object_label": "pedestrian",
+      "red_glow": false,
+      "road_type": "urban",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 40
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Pedestrian 20m ahead in dense worsening fog",
+      "recommended_speed": "25 km/h",
+      "driving_suggestion": "Slow down and scan for crossing pedestrians",
+      "short_explanation": "Dense fog hides pedestrians; 20m is insufficient buffer at 40 km/h",
+      "priority_hazard": "visibility",
+      "voice_alert": "Pedestrian ahead, slow and watch",
+      "confidence": 0.88
+    }
+  },
+  {
+    "id": "H005",
+    "scenario": "Dense fog + wet road + braking glow",
+    "input": {
+      "fog_density": 73,
+      "nearest_object_m": 16,
+      "nearest_object_label": "car",
+      "red_glow": true,
+      "road_type": "wet",
+      "fog_trend": "stable",
+      "current_speed_kmh": 60
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Braking car 16m ahead on wet foggy road",
+      "recommended_speed": "30 km/h",
+      "driving_suggestion": "Brake gently — wet road extends stopping distance",
+      "short_explanation": "Wet surface increases stopping distance; braking car in fog compounds risk",
+      "priority_hazard": "braking",
+      "voice_alert": "Wet road brake ahead, ease off",
+      "confidence": 0.90
+    }
+  },
+  {
+    "id": "H006",
+    "scenario": "Dense fog + high speed + no object",
+    "input": {
+      "fog_density": 82,
+      "nearest_object_m": 999,
+      "nearest_object_label": "none",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 110
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Dense fog at 110 km/h — visibility critically low",
+      "recommended_speed": "40 km/h",
+      "driving_suggestion": "Reduce speed drastically, activate fog lights",
+      "short_explanation": "110 km/h in dense fog gives near-zero reaction time to any hazard",
+      "priority_hazard": "speed",
+      "voice_alert": "Too fast for fog, slow down",
+      "confidence": 0.92
+    }
+  },
+  {
+    "id": "H007",
+    "scenario": "Dense fog + improving trend but still high",
+    "input": {
+      "fog_density": 72,
+      "nearest_object_m": 25,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "improving",
+      "current_speed_kmh": 50
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Dense fog — still dangerous despite improvement",
+      "recommended_speed": "40 km/h",
+      "driving_suggestion": "Maintain reduced speed until conditions clear significantly",
+      "short_explanation": "Improving trend is positive but fog remains dense; premature speed increase is risky",
+      "priority_hazard": "visibility",
+      "voice_alert": "Fog improving, stay cautious",
+      "confidence": 0.87
+    }
+  },
+  {
+    "id": "H008",
+    "scenario": "Dense fog + night equivalent + school zone",
+    "input": {
+      "fog_density": 85,
+      "nearest_object_m": 30,
+      "nearest_object_label": "pedestrian",
+      "red_glow": false,
+      "road_type": "urban",
+      "fog_trend": "stable",
+      "current_speed_kmh": 35
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Pedestrian 30m in dense urban fog",
+      "recommended_speed": "20 km/h",
+      "driving_suggestion": "Drop to crawl speed in urban dense fog",
+      "short_explanation": "Urban zones with pedestrians in dense fog demand minimum safe speed",
+      "priority_hazard": "visibility",
+      "voice_alert": "Dense urban fog, crawl speed",
+      "confidence": 0.89
+    }
+  },
+  {
+    "id": "M001",
+    "scenario": "Moderate fog + wet road + curve",
+    "input": {
+      "fog_density": 62,
+      "nearest_object_m": 22,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "curve",
+      "fog_trend": "stable",
+      "current_speed_kmh": 65
+    },
+    "output": {
+      "risk_level": "MODERATE",
+      "hazard_alert": "Wet curve in moderate fog",
+      "recommended_speed": "45 km/h",
+      "driving_suggestion": "Reduce speed before curve, avoid braking mid-turn",
+      "short_explanation": "Wet surface and reduced visibility on curve demands conservative speed entry",
+      "priority_hazard": "speed",
+      "voice_alert": "Wet curve ahead, slow down",
+      "confidence": 0.85
+    }
+  },
+  {
+    "id": "M002",
+    "scenario": "Moderate fog + stable + car at 18m",
+    "input": {
+      "fog_density": 58,
+      "nearest_object_m": 18,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "stable",
+      "current_speed_kmh": 70
+    },
+    "output": {
+      "risk_level": "MODERATE",
+      "hazard_alert": "Car at 18m in moderate fog",
+      "recommended_speed": "50 km/h",
+      "driving_suggestion": "Reduce speed and increase following distance",
+      "short_explanation": "18m buffer at 70 km/h in moderate fog is below safe 3-second rule",
+      "priority_hazard": "visibility",
+      "voice_alert": "Moderate fog, increase distance",
+      "confidence": 0.83
+    }
+  },
+  {
+    "id": "M003",
+    "scenario": "Moderate fog + worsening trend + urban",
+    "input": {
+      "fog_density": 55,
+      "nearest_object_m": 30,
+      "nearest_object_label": "none",
+      "red_glow": false,
+      "road_type": "urban",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 45
+    },
+    "output": {
+      "risk_level": "MODERATE",
+      "hazard_alert": "Fog worsening in urban area — anticipate hazards",
+      "recommended_speed": "35 km/h",
+      "driving_suggestion": "Pre-emptively reduce speed as fog is worsening",
+      "short_explanation": "Worsening fog in urban zone warrants proactive speed reduction before visibility drops further",
+      "priority_hazard": "visibility",
+      "voice_alert": "Fog worsening, reduce speed now",
+      "confidence": 0.82
+    }
+  },
+  {
+    "id": "M004",
+    "scenario": "Moderate fog + truck at 15m + stable",
+    "input": {
+      "fog_density": 60,
+      "nearest_object_m": 15,
+      "nearest_object_label": "truck",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "stable",
+      "current_speed_kmh": 80
+    },
+    "output": {
+      "risk_level": "MODERATE",
+      "hazard_alert": "Truck 15m ahead in moderate fog",
+      "recommended_speed": "50 km/h",
+      "driving_suggestion": "Slow down and stay well behind the truck",
+      "short_explanation": "Large vehicles create road spray and sudden stops; 15m at 80 km/h is insufficient",
+      "priority_hazard": "collision",
+      "voice_alert": "Truck 15 meters, slow down",
+      "confidence": 0.84
+    }
+  },
+  {
+    "id": "M005",
+    "scenario": "Moderate fog + wet + no detection",
+    "input": {
+      "fog_density": 65,
+      "nearest_object_m": 999,
+      "nearest_object_label": "none",
+      "red_glow": false,
+      "road_type": "wet",
+      "fog_trend": "stable",
+      "current_speed_kmh": 75
+    },
+    "output": {
+      "risk_level": "MODERATE",
+      "hazard_alert": "Wet road with moderate fog — reduced grip",
+      "recommended_speed": "50 km/h",
+      "driving_suggestion": "Slow for wet surface and fog combination",
+      "short_explanation": "No objects detected but wet fog degrades both traction and perception",
+      "priority_hazard": "speed",
+      "voice_alert": "Wet and foggy, reduce speed",
+      "confidence": 0.81
+    }
+  },
+  {
+    "id": "M006",
+    "scenario": "Moderate fog + improving + car at 20m",
+    "input": {
+      "fog_density": 57,
+      "nearest_object_m": 20,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "improving",
+      "current_speed_kmh": 55
+    },
+    "output": {
+      "risk_level": "MODERATE",
+      "hazard_alert": "Moderate fog clearing — car at 20m",
+      "recommended_speed": "55 km/h",
+      "driving_suggestion": "Maintain caution — conditions improving but not clear",
+      "short_explanation": "Improving fog reduces risk level slightly; 20m gap is safe at current speed",
+      "priority_hazard": "visibility",
+      "voice_alert": "Fog clearing, stay cautious",
+      "confidence": 0.80
+    }
+  },
+  {
+    "id": "M007",
+    "scenario": "Moderate fog + night + pedestrian at 25m",
+    "input": {
+      "fog_density": 63,
+      "nearest_object_m": 25,
+      "nearest_object_label": "pedestrian",
+      "red_glow": false,
+      "road_type": "urban",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 40
+    },
+    "output": {
+      "risk_level": "MODERATE",
+      "hazard_alert": "Pedestrian 25m ahead in worsening urban fog",
+      "recommended_speed": "30 km/h",
+      "driving_suggestion": "Slow and prepare to stop for pedestrian",
+      "short_explanation": "Worsening fog in urban area with pedestrian proximity warrants significant speed reduction",
+      "priority_hazard": "visibility",
+      "voice_alert": "Pedestrian ahead, slow down",
+      "confidence": 0.83
+    }
+  },
+  {
+    "id": "M008",
+    "scenario": "Moderate fog + red glow far vehicle",
+    "input": {
+      "fog_density": 61,
+      "nearest_object_m": 22,
+      "nearest_object_label": "car",
+      "red_glow": true,
+      "road_type": "highway",
+      "fog_trend": "stable",
+      "current_speed_kmh": 65
+    },
+    "output": {
+      "risk_level": "MODERATE",
+      "hazard_alert": "Distant braking vehicle in moderate fog",
+      "recommended_speed": "45 km/h",
+      "driving_suggestion": "Ease off throttle, cover brake pedal",
+      "short_explanation": "Braking at 22m in moderate fog gives adequate reaction time if speed reduces now",
+      "priority_hazard": "braking",
+      "voice_alert": "Brake lights ahead, ease off",
+      "confidence": 0.82
+    }
+  },
+  {
+    "id": "M009",
+    "scenario": "Moderate fog + curve + truck no braking",
+    "input": {
+      "fog_density": 67,
+      "nearest_object_m": 18,
+      "nearest_object_label": "truck",
+      "red_glow": false,
+      "road_type": "curve",
+      "fog_trend": "stable",
+      "current_speed_kmh": 55
+    },
+    "output": {
+      "risk_level": "MODERATE",
+      "hazard_alert": "Truck 18m ahead on foggy curve",
+      "recommended_speed": "40 km/h",
+      "driving_suggestion": "Drop speed before curve, don't overtake",
+      "short_explanation": "Truck on curve in moderate fog blocks sightlines and limits safe passing",
+      "priority_hazard": "visibility",
+      "voice_alert": "Truck on curve, drop speed",
+      "confidence": 0.84
+    }
+  },
+  {
+    "id": "M010",
+    "scenario": "Moderate fog + high speed highway + stable",
+    "input": {
+      "fog_density": 59,
+      "nearest_object_m": 35,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "stable",
+      "current_speed_kmh": 100
+    },
+    "output": {
+      "risk_level": "MODERATE",
+      "hazard_alert": "High speed in moderate fog — stopping distance risky",
+      "recommended_speed": "60 km/h",
+      "driving_suggestion": "Reduce speed significantly — 100 km/h unsafe in fog",
+      "short_explanation": "100 km/h stopping distance exceeds visible range in moderate fog",
+      "priority_hazard": "speed",
+      "voice_alert": "Too fast for conditions, slow down",
+      "confidence": 0.86
+    }
+  },
+  {
+    "id": "L001",
+    "scenario": "Low fog + clear highway + no hazards",
+    "input": {
+      "fog_density": 18,
+      "nearest_object_m": 50,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "stable",
+      "current_speed_kmh": 100
+    },
+    "output": {
+      "risk_level": "LOW",
+      "hazard_alert": "Light haze — good driving conditions",
+      "recommended_speed": "100 km/h",
+      "driving_suggestion": "Maintain speed and standard following distance",
+      "short_explanation": "Fog density and object distance pose no significant risk at current speed",
+      "priority_hazard": "none",
+      "voice_alert": "Conditions clear, drive normally",
+      "confidence": 0.95
+    }
+  },
+  {
+    "id": "L002",
+    "scenario": "Low fog + wet road + urban",
+    "input": {
+      "fog_density": 22,
+      "nearest_object_m": 40,
+      "nearest_object_label": "none",
+      "red_glow": false,
+      "road_type": "wet",
+      "fog_trend": "stable",
+      "current_speed_kmh": 50
+    },
+    "output": {
+      "risk_level": "LOW",
+      "hazard_alert": "Wet road — minor traction concern",
+      "recommended_speed": "50 km/h",
+      "driving_suggestion": "Maintain speed, allow extra braking distance",
+      "short_explanation": "Wet road is the only active risk factor; fog and proximity are non-threatening",
+      "priority_hazard": "speed",
+      "voice_alert": "Wet road, allow extra distance",
+      "confidence": 0.90
+    }
+  },
+  {
+    "id": "L003",
+    "scenario": "Low fog + improving + open highway",
+    "input": {
+      "fog_density": 25,
+      "nearest_object_m": 80,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "improving",
+      "current_speed_kmh": 90
+    },
+    "output": {
+      "risk_level": "LOW",
+      "hazard_alert": "Conditions improving — minor haze remains",
+      "recommended_speed": "90 km/h",
+      "driving_suggestion": "Continue at current speed, conditions are clearing",
+      "short_explanation": "Improving fog and 80m gap give ample reaction time at 90 km/h",
+      "priority_hazard": "none",
+      "voice_alert": "Clearing well, safe to continue",
+      "confidence": 0.94
+    }
+  },
+  {
+    "id": "L004",
+    "scenario": "Low fog + urban + pedestrian far",
+    "input": {
+      "fog_density": 15,
+      "nearest_object_m": 45,
+      "nearest_object_label": "pedestrian",
+      "red_glow": false,
+      "road_type": "urban",
+      "fog_trend": "stable",
+      "current_speed_kmh": 40
+    },
+    "output": {
+      "risk_level": "LOW",
+      "hazard_alert": "Pedestrian detected 45m ahead",
+      "recommended_speed": "40 km/h",
+      "driving_suggestion": "Stay alert for pedestrian crossing",
+      "short_explanation": "45m gap and low fog density allow safe observation and response",
+      "priority_hazard": "none",
+      "voice_alert": "Pedestrian ahead, stay alert",
+      "confidence": 0.92
+    }
+  },
+  {
+    "id": "L005",
+    "scenario": "No fog + clear highway",
+    "input": {
+      "fog_density": 5,
+      "nearest_object_m": 120,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "stable",
+      "current_speed_kmh": 120
+    },
+    "output": {
+      "risk_level": "LOW",
+      "hazard_alert": "Clear conditions — normal driving",
+      "recommended_speed": "120 km/h",
+      "driving_suggestion": "No action needed, maintain safe following distance",
+      "short_explanation": "No fog, 120m gap, no hazards — standard highway conditions",
+      "priority_hazard": "none",
+      "voice_alert": "All clear, safe driving",
+      "confidence": 0.98
+    }
+  },
+  {
+    "id": "L006",
+    "scenario": "Low fog + curve + no object",
+    "input": {
+      "fog_density": 30,
+      "nearest_object_m": 999,
+      "nearest_object_label": "none",
+      "red_glow": false,
+      "road_type": "curve",
+      "fog_trend": "improving",
+      "current_speed_kmh": 70
+    },
+    "output": {
+      "risk_level": "LOW",
+      "hazard_alert": "Light fog on curve — manageable",
+      "recommended_speed": "65 km/h",
+      "driving_suggestion": "Slight speed reduction for curve safety",
+      "short_explanation": "Light fog and no objects detected; minor curve speed adjustment recommended",
+      "priority_hazard": "speed",
+      "voice_alert": "Slight fog on curve, ease off",
+      "confidence": 0.88
+    }
+  },
+  {
+    "id": "E001",
+    "scenario": "Multi-hazard: critical fog + wet + braking + curve",
+    "input": {
+      "fog_density": 92,
+      "nearest_object_m": 7,
+      "nearest_object_label": "truck",
+      "red_glow": true,
+      "road_type": "curve",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 65
+    },
+    "output": {
+      "risk_level": "CRITICAL",
+      "hazard_alert": "Braking truck 7m on critical foggy wet curve",
+      "recommended_speed": "0 km/h",
+      "driving_suggestion": "Brake gently to avoid skid on wet curve, stop safely",
+      "short_explanation": "Maximum hazard: four concurrent risk factors demand immediate controlled stop",
+      "priority_hazard": "collision",
+      "voice_alert": "Stop carefully, critical multi-hazard",
+      "confidence": 0.97
+    }
+  },
+  {
+    "id": "E002",
+    "scenario": "Rapid fog onset — was clear, now dense",
+    "input": {
+      "fog_density": 80,
+      "nearest_object_m": 12,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 95
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Sudden dense fog — vehicle 12m ahead at high speed",
+      "recommended_speed": "35 km/h",
+      "driving_suggestion": "Slow urgently — fog appeared rapidly, reduce to safe speed",
+      "short_explanation": "Rapid fog onset at 95 km/h with 12m gap is immediately dangerous",
+      "priority_hazard": "speed",
+      "voice_alert": "Sudden fog, brake urgently",
+      "confidence": 0.92
+    }
+  },
+  {
+    "id": "E003",
+    "scenario": "Fog clearing but still braking vehicle close",
+    "input": {
+      "fog_density": 48,
+      "nearest_object_m": 8,
+      "nearest_object_label": "car",
+      "red_glow": true,
+      "road_type": "highway",
+      "fog_trend": "improving",
+      "current_speed_kmh": 60
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Braking car only 8m ahead — fog clearing",
+      "recommended_speed": "25 km/h",
+      "driving_suggestion": "Brake now — proximity risk independent of fog improvement",
+      "short_explanation": "Braking car at 8m is primary risk; fog improvement is irrelevant at this range",
+      "priority_hazard": "braking",
+      "voice_alert": "Car braking ahead, slow down",
+      "confidence": 0.91
+    }
+  },
+  {
+    "id": "E004",
+    "scenario": "Stopped vehicle in dense fog",
+    "input": {
+      "fog_density": 86,
+      "nearest_object_m": 11,
+      "nearest_object_label": "car",
+      "red_glow": true,
+      "road_type": "highway",
+      "fog_trend": "stable",
+      "current_speed_kmh": 70
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Possibly stopped vehicle 11m ahead in dense fog",
+      "recommended_speed": "20 km/h",
+      "driving_suggestion": "Brake firmly — vehicle may be stationary",
+      "short_explanation": "Sustained red glow at 11m likely indicates stopped or nearly stopped vehicle",
+      "priority_hazard": "braking",
+      "voice_alert": "Vehicle may be stopped, brake",
+      "confidence": 0.90
+    }
+  },
+  {
+    "id": "E005",
+    "scenario": "Motorway multi-vehicle fog chain",
+    "input": {
+      "fog_density": 89,
+      "nearest_object_m": 6,
+      "nearest_object_label": "truck",
+      "red_glow": true,
+      "road_type": "highway",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 85
+    },
+    "output": {
+      "risk_level": "CRITICAL",
+      "hazard_alert": "Braking truck 6m — fog pile-up risk",
+      "recommended_speed": "0 km/h",
+      "driving_suggestion": "Emergency brake and move to shoulder if safe",
+      "short_explanation": "Dense fog with braking trucks at 6m on highway indicates possible pile-up scenario",
+      "priority_hazard": "collision",
+      "voice_alert": "Pile-up risk, brake and stop",
+      "confidence": 0.96
+    }
+  },
+  {
+    "id": "E006",
+    "scenario": "Overnight radiation fog — sudden onset at dawn",
+    "input": {
+      "fog_density": 88,
+      "nearest_object_m": 999,
+      "nearest_object_label": "none",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 100
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Dense radiation fog at high speed — objects may appear suddenly",
+      "recommended_speed": "30 km/h",
+      "driving_suggestion": "Reduce speed drastically — objects invisible until dangerously close",
+      "short_explanation": "No objects detected but dense fog at 100 km/h gives zero reaction margin",
+      "priority_hazard": "speed",
+      "voice_alert": "Dense fog at high speed, slow now",
+      "confidence": 0.93
+    }
+  },
+  {
+    "id": "E007",
+    "scenario": "Speed mismatch — going slow but red glow approaching from rear (simulation)",
+    "input": {
+      "fog_density": 77,
+      "nearest_object_m": 30,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "stable",
+      "current_speed_kmh": 20
+    },
+    "output": {
+      "risk_level": "MODERATE",
+      "hazard_alert": "Very low speed in dense fog — rear collision risk",
+      "recommended_speed": "35 km/h",
+      "driving_suggestion": "Activate hazard lights and move to slow lane",
+      "short_explanation": "Crawling at 20 km/h in dense fog creates rear-impact risk from faster vehicles",
+      "priority_hazard": "speed",
+      "voice_alert": "Activate hazard lights now",
+      "confidence": 0.84
+    }
+  },
+  {
+    "id": "E008",
+    "scenario": "Bridge / overpass with cross-wind fog patch",
+    "input": {
+      "fog_density": 91,
+      "nearest_object_m": 18,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "curve",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 55
+    },
+    "output": {
+      "risk_level": "CRITICAL",
+      "hazard_alert": "Critical fog patch on curved structure — lateral risk",
+      "recommended_speed": "15 km/h",
+      "driving_suggestion": "Slow drastically, center vehicle, no lane changes",
+      "short_explanation": "Critical fog on curved structure combines lateral, collision, and runoff risk",
+      "priority_hazard": "visibility",
+      "voice_alert": "Critical fog on bridge, slow now",
+      "confidence": 0.94
+    }
+  },
+  {
+    "id": "E009",
+    "scenario": "Intersection in moderate fog — no signal",
+    "input": {
+      "fog_density": 64,
+      "nearest_object_m": 12,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "urban",
+      "fog_trend": "stable",
+      "current_speed_kmh": 40
+    },
+    "output": {
+      "risk_level": "MODERATE",
+      "hazard_alert": "Vehicle 12m at urban intersection in fog",
+      "recommended_speed": "25 km/h",
+      "driving_suggestion": "Approach intersection slowly, check all directions",
+      "short_explanation": "Fog obscures cross-traffic at intersections; 12m gap requires reduced approach speed",
+      "priority_hazard": "visibility",
+      "voice_alert": "Fog intersection ahead, go slow",
+      "confidence": 0.85
+    }
+  },
+  {
+    "id": "E010",
+    "scenario": "Tunnel exit into dense fog",
+    "input": {
+      "fog_density": 87,
+      "nearest_object_m": 10,
+      "nearest_object_label": "car",
+      "red_glow": true,
+      "road_type": "highway",
+      "fog_trend": "stable",
+      "current_speed_kmh": 80
+    },
+    "output": {
+      "risk_level": "CRITICAL",
+      "hazard_alert": "Exiting tunnel into dense fog with braking vehicle 10m ahead",
+      "recommended_speed": "20 km/h",
+      "driving_suggestion": "Hard brake on tunnel exit — dense fog and close vehicle",
+      "short_explanation": "Sudden transition from tunnel to dense fog at 80 km/h with 10m to braking vehicle is critical",
+      "priority_hazard": "collision",
+      "voice_alert": "Fog at tunnel exit, brake hard",
+      "confidence": 0.95
+    }
+  },
+  {
+    "id": "E011",
+    "scenario": "Dense fog + emergency vehicle approaching",
+    "input": {
+      "fog_density": 80,
+      "nearest_object_m": 15,
+      "nearest_object_label": "car",
+      "red_glow": true,
+      "road_type": "urban",
+      "fog_trend": "stable",
+      "current_speed_kmh": 45
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Braking vehicles in dense urban fog — pull over possible",
+      "recommended_speed": "25 km/h",
+      "driving_suggestion": "Slow down and stay right — emergency vehicle may be present",
+      "short_explanation": "Dense fog with multiple braking vehicles in urban zone indicates possible emergency vehicle or incident ahead",
+      "priority_hazard": "braking",
+      "voice_alert": "Slow and keep right",
+      "confidence": 0.87
+    }
+  },
+  {
+    "id": "E012",
+    "scenario": "Low fog + red glow only — false alarm candidate",
+    "input": {
+      "fog_density": 12,
+      "nearest_object_m": 35,
+      "nearest_object_label": "car",
+      "red_glow": true,
+      "road_type": "highway",
+      "fog_trend": "stable",
+      "current_speed_kmh": 90
+    },
+    "output": {
+      "risk_level": "MODERATE",
+      "hazard_alert": "Braking vehicle 35m ahead — good visibility",
+      "recommended_speed": "70 km/h",
+      "driving_suggestion": "Ease off and monitor — 35m gap gives reaction time",
+      "short_explanation": "Braking at 35m in good visibility is manageable but warrants speed reduction as precaution",
+      "priority_hazard": "braking",
+      "voice_alert": "Brake lights ahead, ease off",
+      "confidence": 0.88
+    }
+  },
+  {
+    "id": "E013",
+    "scenario": "Very high speed + moderate fog = speed dominates risk",
+    "input": {
+      "fog_density": 55,
+      "nearest_object_m": 40,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "stable",
+      "current_speed_kmh": 130
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "130 km/h in moderate fog — stopping distance exceeds visibility",
+      "recommended_speed": "55 km/h",
+      "driving_suggestion": "Immediate speed reduction — 130 km/h unsafe in these conditions",
+      "short_explanation": "At 130 km/h, stopping distance (~120m) far exceeds visibility range in moderate fog",
+      "priority_hazard": "speed",
+      "voice_alert": "Way too fast, slow down now",
+      "confidence": 0.93
+    }
+  },
+  {
+    "id": "E014",
+    "scenario": "Worsening fog — was moderate now dense, car at 11m",
+    "input": {
+      "fog_density": 74,
+      "nearest_object_m": 11,
+      "nearest_object_label": "car",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 60
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Worsening dense fog — car 11m closing gap",
+      "recommended_speed": "30 km/h",
+      "driving_suggestion": "Slow now before fog worsens further",
+      "short_explanation": "Worsening trend from moderate to dense with 11m gap demands immediate proactive reduction",
+      "priority_hazard": "visibility",
+      "voice_alert": "Fog getting worse, slow down",
+      "confidence": 0.90
+    }
+  },
+  {
+    "id": "E015",
+    "scenario": "Clear with isolated fog bank ahead",
+    "input": {
+      "fog_density": 85,
+      "nearest_object_m": 999,
+      "nearest_object_label": "none",
+      "red_glow": false,
+      "road_type": "highway",
+      "fog_trend": "worsening",
+      "current_speed_kmh": 110
+    },
+    "output": {
+      "risk_level": "HIGH",
+      "hazard_alert": "Entering dense fog bank at highway speed",
+      "recommended_speed": "35 km/h",
+      "driving_suggestion": "Brake before entering fog — reduce speed before visibility drops",
+      "short_explanation": "Entering a dense fog bank at 110 km/h will instantly reduce reaction distance to near zero",
+      "priority_hazard": "speed",
+      "voice_alert": "Fog bank ahead, brake now",
+      "confidence": 0.92
+    }
+  }
+]

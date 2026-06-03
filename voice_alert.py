@@ -7,6 +7,7 @@ last_alert_time = {}
 ALERT_COOLDOWN = 5
 
 
+
 def _speak(message):
 
     engine = pyttsx3.init()

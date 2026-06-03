@@ -78,10 +78,10 @@ class FogDetectionMetrics:
         # Fog density metrics
         if self.fog_density_errors:
             metrics["fog_density"] = {
-                "mae": np.mean(self.fog_density_errors),
-                "rmse": np.sqrt(np.mean([e**2 for e in self.fog_density_errors])),
-                "max_error": max(self.fog_density_errors),
-                "accuracy_10pct": np.mean([1 if e <= 10 else 0 for e in self.fog_density_errors]),
+                "mae": float(np.mean(self.fog_density_errors)),
+                "rmse": float(np.sqrt(np.mean([e**2 for e in self.fog_density_errors]))),
+                "max_error": float(max(self.fog_density_errors)),
+                "accuracy_10pct": float(np.mean([1 if e <= 10 else 0 for e in self.fog_density_errors])),
                 "samples": len(self.fog_density_errors)
             }
 
@@ -197,13 +197,13 @@ class LatencyProfiler:
             return {"samples": 0}
 
         return {
-            "mean_latency_ms": np.mean(self.latencies) * 1000,
-            "median_latency_ms": np.median(self.latencies) * 1000,
-            "max_latency_ms": max(self.latencies) * 1000,
-            "min_latency_ms": min(self.latencies) * 1000,
-            "std_latency_ms": np.std(self.latencies) * 1000,
+            "mean_latency_ms": float(np.mean(self.latencies) * 1000),
+            "median_latency_ms": float(np.median(self.latencies) * 1000),
+            "max_latency_ms": float(max(self.latencies) * 1000),
+            "min_latency_ms": float(min(self.latencies) * 1000),
+            "std_latency_ms": float(np.std(self.latencies) * 1000),
             "samples": len(self.latencies),
-            "target_met": np.mean(self.latencies) * 1000 < 100  # Target: <100ms
+            "target_met": bool(np.mean(self.latencies) * 1000 < 100)  # Target: <100ms
         }
 
 

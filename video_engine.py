@@ -127,8 +127,13 @@ class VideoEngine:
 
         self._raw_frame_index += 1
 
-        # Webcam real-time guard: don't deliver faster than 1 fps
-        if isinstance(self.source, int):
+        # Webcam/IPcam real-time guard: don't deliver faster than 1 fps
+        is_live_stream = isinstance(self.source, int) or (
+            isinstance(self.source, str) and (
+                self.source.startswith("http://") or self.source.startswith("https://")
+            )
+        )
+        if is_live_stream:
             now = time.time()
             if now - self._last_deliver_ts < 1.0:
                 return self._last_delivered      # not yet a new second
@@ -164,8 +169,13 @@ class VideoEngine:
     # ------------------------------------------------------------------
 
     def _try_loop(self) -> None:
-        """Loop video files back to frame 0; no-op for webcams."""
-        if isinstance(self.source, str):
+        """Loop video files back to frame 0; no-op for webcams/IPcams."""
+        is_live_stream = isinstance(self.source, int) or (
+            isinstance(self.source, str) and (
+                self.source.startswith("http://") or self.source.startswith("https://")
+            )
+        )
+        if not is_live_stream and isinstance(self.source, str):
             try:
                 self._cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 self._raw_frame_index = 0
