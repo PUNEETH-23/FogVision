@@ -27,12 +27,62 @@ import html as _html
 import re
 import time
 import cv2
+import json
 import folium
 import streamlit as st
 from streamlit_folium import st_folium
 
 from pipeline     import ADASPipeline
 from video_engine import VideoEngine
+
+def check_and_dehaze_video(source_path):
+    if "processed_source" in st.session_state and st.session_state.processed_source == source_path:
+        return
+    
+    with st.spinner("Analyzing initial fog density of uploaded video..."):
+        # 1. Read first frame to estimate fog density
+        cap_temp = cv2.VideoCapture(source_path)
+        ok, first_frame = cap_temp.read()
+        cap_temp.release()
+        
+        if not ok:
+            st.session_state.processed_source = source_path
+            return
+        
+        from fog_density import estimate_fog_density
+        fog_res = estimate_fog_density(first_frame)
+        initial_fog = float(fog_res) if isinstance(fog_res, (int, float)) else fog_res.get("fog_density", 0.0)
+        st.session_state.initial_fog = initial_fog
+    
+    if initial_fog > 35.0:
+        st.warning(f"🌫️ Dense Fog Detected ({initial_fog:.1f}% > 35%). Pre-dehazing video completely for safe ADAS screening...")
+        
+        with st.spinner("Dehazing video... Please wait."):
+            progress_bar = st.progress(0.0)
+            status_text = st.empty()
+            
+            def progress_cb(pct):
+                progress_bar.progress(pct)
+                status_text.text(f"Dehazing video... {pct:.0%}")
+                
+            # Initialize video engine
+            engine = VideoEngine(source=source_path)
+            # Pre-dehaze the video
+            dehazed_engine = engine.dehaze_video(output_path="temp_dehazed_video.mp4", progress_callback=progress_cb)
+            
+            st.session_state.video_engine = dehazed_engine
+            
+        st.success(f"✅ Video pre-dehazed successfully! (Initial Fog: {initial_fog:.1f}%)")
+        time.sleep(1.0)
+        progress_bar.empty()
+        status_text.empty()
+    else:
+        st.info(f"☀️ Light Fog Conditions ({initial_fog:.1f}% <= 35%). Direct detection enabled (pre-dehazing bypassed).")
+        st.session_state.video_engine = VideoEngine(source=source_path)
+        time.sleep(1.0)
+        
+    st.session_state.processed_source = source_path
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PAGE CONFIG — must be the very first Streamlit call
@@ -240,7 +290,7 @@ st.markdown(
     /* ── METRIC GRID ── */
     .metric-grid {
         display: grid;
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 8px;
         margin-bottom: 14px;
     }
@@ -560,7 +610,10 @@ if "video_engine"   not in st.session_state: st.session_state.video_engine   = N
 if "run_loop"       not in st.session_state: st.session_state.run_loop       = False
 if "latest_result"  not in st.session_state: st.session_state.latest_result  = None
 if "input_mode"     not in st.session_state: st.session_state.input_mode     = "Upload Video"
+if "sim_subprocess" not in st.session_state: st.session_state.sim_subprocess = None
 if "live_source"    not in st.session_state: st.session_state.live_source    = "0"
+if "processed_source" not in st.session_state: st.session_state.processed_source = None
+# Inline Pygame rendering used for Live Feed simulation
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HEADER  (always visible)
@@ -591,15 +644,165 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# Sidebar is now kept collapsed by default. System configuration controls have been moved to the main panel expander below.
+
 # ─────────────────────────────────────────────────────────────────────────────
 # INPUT SOURCE CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
 input_mode = st.radio(
     "▸  Select Input Source",
-    options=["Upload Video", "Live Feed (Sensor + USB Cam/DroidCam)"],
+    options=["Upload Video", "Live Feed (Sensor + USB Cam)"],
     index=0 if st.session_state.input_mode == "Upload Video" else 1,
     horizontal=True,
 )
+
+with st.expander("🔧 SYSTEM CONFIGURATION", expanded=True):
+    st.markdown("<h4 style='font-family: \"Barlow Condensed\", sans-serif; color: var(--teal-mid); margin-top:0; margin-bottom:5px;'>🚗 Vehicular settings</h4>", unsafe_allow_html=True)
+    
+    # Initialize slider key value if not present in session state
+    if "vehicular_speed" not in st.session_state:
+        st.session_state.vehicular_speed = 50.0
+        
+    # Check if obstacle is in near range to override and block movement
+    obstacle_near = False
+    if "latest_result" in st.session_state and st.session_state.latest_result:
+        res = st.session_state.latest_result
+        if res.get("automated_braking", False):
+            obstacle_near = True
+        else:
+            dist = res.get("distance_to_nearest", 80.0)
+            is_live_val = (st.session_state.input_mode == "Live Feed (Sensor + USB Cam)")
+            limit = 0.3 if is_live_val else 10.0
+            if 0.0 < dist < limit:
+                obstacle_near = True
+
+    if obstacle_near:
+        st.session_state.vehicular_speed = 0.0
+        st.error("🚨 CRITICAL BLOCK: Collision imminent! Vehicle cannot move.")
+        
+    if "haze_intensity" not in st.session_state:
+        st.session_state.haze_intensity = 0.0
+    if "esp32_ip" not in st.session_state:
+        st.session_state.esp32_ip = "10.248.116.230"
+    if "control_mode" not in st.session_state:
+        st.session_state.control_mode = "Manual Control"
+    if "cruising_speed" not in st.session_state:
+        st.session_state.cruising_speed = 50.0
+ 
+    # Conditional display of speed slider vs static text
+    if st.session_state.input_mode == "Live Feed (Sensor + USB Cam)":
+        control_mode = st.radio(
+            "Driving Control Mode",
+            options=["Manual Control", "Adaptive Cruise Control (ACC)"],
+            index=0 if st.session_state.control_mode == "Manual Control" else 1,
+            horizontal=True,
+            key="control_mode",
+            help="Switch between manual driving using arrow keys and autonomous ACC vehicle following."
+        )
+        
+        cruising_speed = st.slider(
+            "Cruising / Manual Speed Limit",
+            min_value=10,
+            max_value=100,
+            value=int(st.session_state.cruising_speed),
+            step=5,
+            key="cruising_speed",
+            help="Set the target cruising speed (for ACC) or manual drive speed limit (10 to 100)."
+        )
+        
+        # Calculate max safe speed limit based on the estimated fog density rules:
+        fog_density = 0.0
+        if "latest_result" in st.session_state and st.session_state.latest_result:
+            fog_data = st.session_state.latest_result.get("fog_data", {})
+            if fog_data:
+                fog_density = fog_data.get("fog_density", 0.0)
+ 
+        if fog_density >= 80.0:
+            max_safe_speed = 30.0
+        elif fog_density >= 60.0:
+            max_safe_speed = 50.0
+        elif fog_density >= 40.0:
+            max_safe_speed = 70.0
+        else:
+            max_safe_speed = 100.0
+ 
+        current_val = float(st.session_state.vehicular_speed)
+        if current_val > max_safe_speed:
+            current_val = max_safe_speed
+            st.session_state.vehicular_speed = max_safe_speed
+ 
+        vehicular_speed = st.slider(
+            "Vehicular Speed (km/h)", 
+            min_value=0, 
+            max_value=int(max_safe_speed), 
+            value=0 if obstacle_near else int(current_val),
+            step=5, 
+            disabled=obstacle_near,
+            help=f"Simulate current vehicle speed. Capped at {max_safe_speed} km/h due to fog density ({fog_density:.1f}%)." if not obstacle_near else "Vehicle blocked due to imminent collision risk."
+        )
+        st.session_state.vehicular_speed = vehicular_speed
+        
+        st.markdown(
+            "💡 **Manual Driving controls:** Use **Arrow keys** to steer and drive (Up=Forward, Down=Reverse, Left/Right=Steer, Space=Stop). "
+            "Releasing arrow keys stops the car immediately."
+        )
+        haze_intensity = 0.0
+        
+        # Initialize default IP if not set
+        if "esp32_ip" not in st.session_state:
+            st.session_state.esp32_ip = "10.248.116.230"
+            
+        col_ip, col_btn = st.columns([3, 1])
+        with col_ip:
+            esp32_ip_input = st.text_input(
+                "ESP32 Sensor Server IP",
+                value=st.session_state.esp32_ip,
+                help="IP address of physical ESP32."
+            )
+        with col_btn:
+            st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
+            if st.button("🔌 Connect", type="primary", use_container_width=True):
+                new_ip = esp32_ip_input.strip()
+                st.session_state.esp32_ip = new_ip
+                # Immediately flush the new IP into sim_state.json so the
+                # Pygame simulator picks it up without waiting for the next
+                # pipeline cycle.
+                try:
+                    _existing = {}
+                    try:
+                        with open("sim_state.json", "r") as _f:
+                            _existing = json.load(_f)
+                    except Exception:
+                        pass
+                    _existing["esp32_ip"] = new_ip
+                    with open("sim_state.json", "w") as _f:
+                        json.dump(_existing, _f, indent=2)
+                except Exception:
+                    pass
+                st.toast(f"✅ Connected to ESP32 at {new_ip}", icon="🔌")
+                st.rerun()
+                
+        esp32_ip = st.session_state.esp32_ip
+    else:
+        current_val = float(st.session_state.vehicular_speed)
+        vehicular_speed = st.slider(
+            "Vehicular Speed (km/h)", 
+            min_value=0, 
+            max_value=120, 
+            value=0 if obstacle_near else int(current_val),
+            step=5, 
+            disabled=obstacle_near,
+            help="Simulate current vehicle speed." if not obstacle_near else "Vehicle blocked due to imminent collision risk."
+        )
+        st.session_state.vehicular_speed = vehicular_speed
+        st.markdown("**Dehaze Activation Fog Threshold:** `35.0%` (Fixed Rule)")
+        haze_intensity = 0.0
+        esp32_ip = ""
+        control_mode = "Manual Control"
+        cruising_speed = 50.0
+        
+    live_fps = 1.0
+
 
 if input_mode != st.session_state.input_mode:
     st.session_state.input_mode = input_mode
@@ -607,6 +810,13 @@ if input_mode != st.session_state.input_mode:
     if st.session_state.video_engine is not None:
         st.session_state.video_engine.release()
         st.session_state.video_engine = None
+    if "sim_subprocess" in st.session_state and st.session_state.sim_subprocess is not None:
+        try:
+            if st.session_state.sim_subprocess.poll() is None:
+                st.session_state.sim_subprocess.terminate()
+        except Exception:
+            pass
+        st.session_state.sim_subprocess = None
     st.session_state.run_loop = False
     st.session_state.latest_result = None
     st.rerun()
@@ -615,26 +825,56 @@ if st.session_state.input_mode == "Upload Video":
     uploaded_file = st.file_uploader(
         "▸  Upload Video for Analysis",
         type=["mp4", "avi", "mov", "mkv"],
-        help="MP4 / AVI / MOV / MKV — the system extracts 1 frame per second for analysis.",
+        help="MP4 / AVI / MOV / MKV — the video is first dehazed completely, then analysed at 10 FPS.",
     )
 
-    if uploaded_file is not None and uploaded_file != st.session_state.uploaded_file:
+    use_demo = st.checkbox("▸ Use Demo Video (Realistic_static_urban_surveil.mp4)", value=(st.session_state.uploaded_file == "demo"))
+
+    if use_demo:
+        if st.session_state.uploaded_file != "demo":
+            st.session_state.uploaded_file = "demo"
+            check_and_dehaze_video("Realistic_static_urban_surveil.mp4")
+            st.session_state.pipeline      = ADASPipeline()
+            st.session_state.pipeline.initial_fog = st.session_state.get("initial_fog", None)
+            st.session_state.latest_result = None
+            st.session_state.run_loop      = True
+            st.rerun()
+    elif st.session_state.uploaded_file == "demo":
+        st.session_state.uploaded_file = None
+        st.session_state.processed_source = None
+        if st.session_state.video_engine is not None:
+            st.session_state.video_engine.release()
+            st.session_state.video_engine = None
+        st.session_state.run_loop = False
+        st.session_state.latest_result = None
+        st.rerun()
+    elif uploaded_file is not None and uploaded_file != st.session_state.uploaded_file:
         st.session_state.uploaded_file = uploaded_file
         temp_video_path = "temp_uploaded_video.mp4"
         with open(temp_video_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
-        st.session_state.video_engine  = VideoEngine(source=temp_video_path)
+        check_and_dehaze_video(temp_video_path)
         st.session_state.pipeline      = ADASPipeline()
+        st.session_state.pipeline.initial_fog = st.session_state.get("initial_fog", None)
         st.session_state.latest_result = None
-        st.session_state.run_loop      = True   # auto-start on upload
+        st.session_state.run_loop      = True
+        st.rerun()
+    elif uploaded_file is None and st.session_state.uploaded_file is not None and st.session_state.uploaded_file != "demo":
+        st.session_state.uploaded_file = None
+        st.session_state.processed_source = None
+        if st.session_state.video_engine is not None:
+            st.session_state.video_engine.release()
+            st.session_state.video_engine = None
+        st.session_state.run_loop = False
+        st.session_state.latest_result = None
         st.rerun()
 else:
     live_c1, live_c2 = st.columns([3, 1])
     with live_c1:
         live_source_input = st.text_input(
-            "▸  USB Webcam Index or IP Camera URL (ESP32/DroidCam)",
+            "▸  USB Webcam Index",
             value=st.session_state.live_source,
-            help="E.g., 0 for default USB webcam, 1 for secondary webcam, or http://192.168.1.100/stream",
+            help="0 = first camera (default), 1 = second camera. Use 1 if 0 is your laptop built-in cam.",
         )
     with live_c2:
         st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
@@ -657,6 +897,8 @@ else:
                 engine = VideoEngine(source=actual_source)
                 if engine.is_opened:
                     st.session_state.video_engine = engine
+                    if "initial_fog" in st.session_state:
+                        del st.session_state.initial_fog
                     st.session_state.pipeline = ADASPipeline()
                     st.session_state.latest_result = None
                     st.session_state.run_loop = True
@@ -714,6 +956,24 @@ if pipeline_ready:
     engine:   VideoEngine  = st.session_state.video_engine
     pipeline: ADASPipeline = st.session_state.pipeline
 
+    # If in Live Feed mode and the simulator is manually controlled, load the simulator speed
+    if st.session_state.input_mode == "Live Feed (Sensor + USB Cam)":
+        try:
+            import json
+            with open("sim_state.json", "r") as f:
+                sim_state = json.load(f)
+            if sim_state.get("manual_control", False):
+                st.session_state.vehicular_speed = float(sim_state.get("speed", 50.0))
+                vehicular_speed = st.session_state.vehicular_speed
+        except Exception:
+            pass
+
+    # Update vehicular speed for motion analyzer warnings
+    pipeline._ego_speed_kmh = float(vehicular_speed)
+    
+    # Update live feed interval
+    engine.live_interval = 1.0 / live_fps
+
     if not engine.is_opened:
         st.error("❌ Could not open video source.")
     else:
@@ -725,11 +985,30 @@ if pipeline_ready:
                 st.warning("⚠️ Live feed frame drop / connection timeout.")
         elif st.session_state.run_loop:
             is_video_mode = (st.session_state.input_mode == "Upload Video")
-            st.session_state.latest_result = pipeline.process(video_frame.frame, lat, lon, is_video=is_video_mode)
+            haze_intensity_val = float(st.session_state.haze_intensity) if not is_video_mode else 0.0
+            esp32_ip_val = st.session_state.esp32_ip if not is_video_mode else ""
+            control_mode_val = st.session_state.control_mode if not is_video_mode else "Manual Control"
+            cruising_speed_val = float(st.session_state.cruising_speed) if not is_video_mode else 50.0
+            
+            st.session_state.latest_result = pipeline.process(
+                video_frame.frame, 
+                lat, 
+                lon, 
+                is_video=is_video_mode,
+                speed_kmh=float(st.session_state.vehicular_speed),
+                is_live=(not is_video_mode),
+                haze_intensity=haze_intensity_val,
+                esp32_ip=esp32_ip_val,
+                control_mode=control_mode_val,
+                cruising_speed=cruising_speed_val
+            )
 
 latest_result = st.session_state.latest_result
 
 if latest_result:
+    if latest_result.get("automated_braking", False):
+        st.session_state.vehicular_speed = 0.0
+        
     fog_data      = latest_result.get("fog_data",            {}) or {}
     fps           = latest_result.get("fps",                  0)
     detections    = latest_result.get("detections",          []) or []
@@ -739,17 +1018,48 @@ if latest_result:
     risk_score    = latest_result.get("risk_score",          0.0)
     risk_level    = latest_result.get("risk_level",     "UNKNOWN")
     risk_comps    = latest_result.get("risk_components",     {}) or {}
-    red_glow      = latest_result.get("red_glow",          False)
     dist_m        = latest_result.get("distance_to_nearest", 0.0)
     near_label    = latest_result.get("nearest_label",    "none")
     override      = latest_result.get("hard_override",    False)
     override_r    = latest_result.get("override_reason",     "")
     display_frame = latest_result["frame"]
+    
+    # Update sim_state.json with active pipeline results
+    sim_data = {
+        "running": st.session_state.run_loop,
+        "speed": float(st.session_state.vehicular_speed),
+        "braking": bool(latest_result.get("automated_braking", False)),
+        "alerts": [a.get("message", "") for a in alerts] if alerts else [],
+        "esp32_sensor_data": latest_result.get("esp32_sensor_data", {"left": 80.0, "middle": 80.0, "right": 80.0}),
+        "esp32_ip": st.session_state.esp32_ip if "esp32_ip" in st.session_state else "",
+        "last_update": time.time()
+    }
+    try:
+        with open("sim_state.json", "w") as f:
+            json.dump(sim_data, f, indent=2)
+    except Exception:
+        pass
 else:
     fog_data = {}; fps = 0; detections = []; road_context = {}; alerts = []
     llm_response = ""; risk_score = 0.0; risk_level = "UNKNOWN"
     risk_comps = {}; red_glow = False; dist_m = 0.0; near_label = "none"
     override = False; override_r = ""
+    
+    # Update sim_state.json with standby state
+    sim_data = {
+        "running": st.session_state.run_loop,
+        "speed": float(st.session_state.vehicular_speed) if "vehicular_speed" in st.session_state else 50.0,
+        "braking": False,
+        "alerts": [],
+        "esp32_sensor_data": {"left": 80.0, "middle": 80.0, "right": 80.0},
+        "esp32_ip": st.session_state.esp32_ip if "esp32_ip" in st.session_state else "",
+        "last_update": time.time()
+    }
+    try:
+        with open("sim_state.json", "w") as f:
+            json.dump(sim_data, f, indent=2)
+    except Exception:
+        pass
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ⚠ HIGH RISK POPUP BANNER — injected at top when risk is HIGH
@@ -791,11 +1101,19 @@ left_col, right_col = st.columns([3, 2], gap="medium")
 with left_col:
 
     # ── VIDEO FEED ──
-    st.markdown('<div class="panel-title">LIVE PROCESSED FEED — DEHAZED + ANNOTATED</div>', unsafe_allow_html=True)
+    dehaze_status_label = ""
+    if latest_result:
+        is_dehazed = latest_result.get("is_dehazed", False)
+        if is_dehazed:
+            dehaze_status_label = ' <span class="pill pill-danger" style="margin-left:10px;vertical-align:middle;">DEHAZING: ACTIVE</span>'
+        else:
+            dehaze_status_label = ' <span class="pill" style="margin-left:10px;vertical-align:middle;color:var(--text-muted);border-color:var(--border);">DEHAZING: BYPASSED</span>'
+
+    st.markdown(f'<div class="panel-title">LIVE PROCESSED FEED — DEHAZED + ANNOTATED{dehaze_status_label}</div>', unsafe_allow_html=True)
 
     if display_frame is not None:
         display_rgb = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
-        st.image(display_rgb, channels="RGB", use_container_width=True)
+        st.image(display_rgb, channels="RGB", width='stretch')
         if video_frame is not None:
             eng = st.session_state.video_engine
             st.markdown(
@@ -819,7 +1137,122 @@ with left_col:
             unsafe_allow_html=True,
         )
 
-    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+    # ── ESP32 LIVE SENSOR READOUT (live feed only) ───────────────────────────
+    # Refreshes every ~1 s with the pipeline rerun cycle.
+    if st.session_state.input_mode == "Live Feed (Sensor + USB Cam)":
+        raw_sensors = latest_result.get("esp32_sensor_data", {}) if latest_result else {}
+        s_left   = raw_sensors.get("left",   None)
+        s_center = raw_sensors.get("middle", None)
+        s_right  = raw_sensors.get("right",  None)
+
+        esp32_ok = (
+            latest_result.get("sensor_fusion", {}).get("esp32_connected", False)
+            if latest_result else False
+        )
+
+        # ── helpers ────────────────────────────────────────────────────────
+        MAX_RANGE = 2.0  # metres to treat as "full bar" for visualisation
+
+        def _sc(m):
+            if m is None or m >= 80.0: return "#4A5568"
+            if m < 0.30: return "var(--danger)"
+            if m < 0.70: return "var(--warn)"
+            return "var(--safe)"
+
+        def _slbl(m):
+            if m is None or m >= 80.0: return "--"
+            return f"{m:.2f}"
+
+        def _sunit(m):
+            return "m" if (m is not None and m < 80.0) else ""
+
+        def _sstat(m):
+            if m is None or m >= 80.0: return ("NO DATA", "#4A5568")
+            if m < 0.30: return ("⚠ CRITICAL", "var(--danger)")
+            if m < 0.70: return ("⚡ NEAR", "var(--warn)")
+            return ("✓ CLEAR", "var(--safe)")
+
+        def _bar_pct(m):
+            """Bar fills as object gets CLOSER (100% = at 0 m, 0% = at MAX_RANGE)."""
+            if m is None or m >= 80.0: return 0
+            return max(0, min(100, int((1.0 - m / MAX_RANGE) * 100)))
+
+        # ── connection badge + timestamp ───────────────────────────────────
+        import time as _time
+        ts_str = _time.strftime("%H:%M:%S")
+        if esp32_ok:
+            conn_html = (
+                '<span style="display:inline-flex;align-items:center;gap:5px;">'
+                '<span style="width:8px;height:8px;border-radius:50%;background:var(--safe);'
+                'animation:pulse 1.5s ease-in-out infinite;display:inline-block;"></span>'
+                '<span style="color:var(--safe);font-size:0.65rem;">LIVE · ESP32 CONNECTED</span>'
+                '</span>'
+            )
+        else:
+            conn_html = '<span style="color:#4A5568;font-size:0.65rem;">○ ESP32 NOT CONNECTED</span>'
+
+        # ── build zone cards ───────────────────────────────────────────────
+        zones_html = ""
+        for zone_name, val in [("LEFT", s_left), ("CENTER", s_center), ("RIGHT", s_right)]:
+            col        = _sc(val)
+            big_num    = _slbl(val)
+            unit       = _sunit(val)
+            stat, scol = _sstat(val)
+            bar_pct    = _bar_pct(val)
+
+            # Bar colour matches proximity (red when full, green when empty)
+            bar_col = col
+
+            zones_html += f"""
+<div style="flex:1;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.07);
+            border-radius:10px;padding:14px 12px;text-align:center;position:relative;overflow:hidden;">
+
+  <!-- Zone label -->
+  <div style="font-size:0.55rem;font-family:'DM Mono',monospace;letter-spacing:0.18em;
+              color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:6px;">
+    SENSOR · {zone_name}
+  </div>
+
+  <!-- Big number -->
+  <div style="font-family:'Barlow Condensed',sans-serif;font-size:2.6rem;font-weight:800;
+              color:{col};line-height:1;letter-spacing:-0.02em;">
+    {big_num}<span style="font-size:1rem;font-weight:500;margin-left:3px;">{unit}</span>
+  </div>
+
+  <!-- Status badge -->
+  <div style="font-size:0.62rem;font-family:'DM Mono',monospace;letter-spacing:0.1em;
+              color:{scol};margin-top:6px;font-weight:600;">
+    {stat}
+  </div>
+
+  <!-- Distance bar (fills as object approaches) -->
+  <div style="margin-top:10px;background:rgba(255,255,255,0.06);
+              border-radius:4px;height:6px;overflow:hidden;">
+    <div style="width:{bar_pct}%;height:100%;background:{bar_col};
+                border-radius:4px;transition:width 0.4s ease;"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;
+              font-size:0.48rem;color:rgba(255,255,255,0.25);margin-top:3px;
+              font-family:'DM Mono',monospace;">
+    <span>CLOSE</span><span>FAR</span>
+  </div>
+</div>"""
+
+        # ── render ─────────────────────────────────────────────────────────
+        st.markdown(
+            f'<div style="margin-top:10px;margin-bottom:12px;">'
+            f'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+            f'<div style="font-size:0.65rem;font-family:\'DM Mono\',monospace;letter-spacing:0.14em;'
+            f'color:var(--text-muted);text-transform:uppercase;">ESP32 Distance Sensors</div>'
+            f'<div style="display:flex;align-items:center;gap:10px;">'
+            f'{conn_html}'
+            f'<span style="font-size:0.6rem;color:rgba(255,255,255,0.25);font-family:\'DM Mono\',monospace;">⏱ {ts_str}</span>'
+            f'</div></div>'
+            f'<div style="display:flex;gap:10px;">{zones_html}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
 
     # ── LIVE SAFETY METRICS ──
     fog_dens   = fog_data.get("fog_density",       0.0)
@@ -827,30 +1260,68 @@ with left_col:
     rec_speed  = fog_data.get("recommended_speed", 0)
 
     fog_color  = 'var(--danger)' if fog_dens > 60 else 'var(--warn)' if fog_dens > 30 else 'var(--safe)'
-    dist_color = 'var(--danger)' if 0 < dist_m < 15 else 'var(--warn)' if 0 < dist_m < 30 else 'var(--teal-dark)'
-    dist_val   = "—" if dist_m == 0 else f"{dist_m:.0f}m"
-    rg_color   = 'var(--danger)' if red_glow else 'var(--safe)'
-    rg_label   = "🔴 ACTIVE" if red_glow else "✅ CLEAR"
+    dist_color = 'var(--danger)' if 0 < dist_m < 0.3 else 'var(--warn)' if 0 < dist_m < 0.6 else 'var(--teal-dark)'
+    dist_val   = "—" if dist_m == 0 else f"{dist_m:.2f}m"
 
-    st.markdown(
-        f'<div class="panel-title">LIVE SAFETY METRICS</div>'
-        f'<div class="metric-grid">'
-        f'<div class="metric-tile"><div class="metric-label">FOG DENSITY</div>'
-        f'<div class="metric-value" style="color:{fog_color}">{fog_dens:.1f}%</div></div>'
-        f'<div class="metric-tile"><div class="metric-label">VISIBILITY</div>'
-        f'<div class="metric-value" style="font-size:1rem;color:var(--teal-dark)">{visibility}</div></div>'
-        f'<div class="metric-tile"><div class="metric-label">REC. SPEED</div>'
-        f'<div class="metric-value" style="color:var(--accent)">{rec_speed}</div><div class="metric-sub">km/h</div></div>'
-        f'<div class="metric-tile"><div class="metric-label">PIPELINE FPS</div>'
-        f'<div class="metric-value" style="color:var(--teal-mid)">{fps}</div></div>'
-        f'<div class="metric-tile"><div class="metric-label">NEAREST OBJ</div>'
-        f'<div class="metric-value" style="color:{dist_color}">{dist_val}</div>'
-        f'<div class="metric-sub" style="color:var(--text-muted)">{near_label if near_label != "none" else ""}</div></div>'
-        f'<div class="metric-tile"><div class="metric-label">RED GLOW</div>'
-        f'<div class="metric-value" style="color:{rg_color};font-size:0.85rem">{rg_label}</div></div>'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+    if st.session_state.input_mode == "Live Feed (Sensor + USB Cam)":
+        mode_label = latest_result.get("control_mode", "Manual Control") if latest_result else "Manual Control"
+        t_speed = latest_result.get("target_speed", 0) if latest_result else 0
+        t_turn = latest_result.get("target_turn", 0) if latest_result else 0
+        rel_vel = latest_result.get("relative_velocity", 0.0) if latest_result else 0.0
+        
+        speed_dir = "Stopped"
+        if t_speed > 0:
+            speed_dir = f"{t_speed}% Fwd"
+        elif t_speed < 0:
+            speed_dir = f"{abs(t_speed)}% Rev"
+            
+        turn_dir = "Straight"
+        if t_turn > 0:
+            turn_dir = f"{t_turn}% Right"
+        elif t_turn < 0:
+            turn_dir = f"{abs(t_turn)}% Left"
+            
+        motor_cmd_str = f"Speed: {speed_dir}<br>Turn: {turn_dir}"
+        
+        vel_color = 'var(--danger)' if rel_vel < -0.1 else 'var(--safe)' if rel_vel > 0.1 else 'var(--text-muted)'
+        vel_status = "Closing" if rel_vel < -0.1 else "Receding" if rel_vel > 0.1 else "Stable"
+        
+        st.markdown(
+            f'<div class="panel-title">LIVE SAFETY & MOTOR METRICS</div>'
+            f'<div class="metric-grid">'
+            f'<div class="metric-tile"><div class="metric-label">FOG DENSITY</div>'
+            f'<div class="metric-value" style="color:{fog_color}">{fog_dens:.1f}%</div></div>'
+            f'<div class="metric-tile"><div class="metric-label">CONTROL MODE</div>'
+            f'<div class="metric-value" style="font-size:0.85rem;color:var(--teal-light);padding-top:4px;">{mode_label}</div></div>'
+            f'<div class="metric-tile"><div class="metric-label">MOTOR COMMAND</div>'
+            f'<div class="metric-value" style="font-size:0.82rem;color:var(--accent);line-height:1.2;padding-top:2px;">{motor_cmd_str}</div></div>'
+            f'<div class="metric-tile"><div class="metric-label">REL. VELOCITY</div>'
+            f'<div class="metric-value" style="color:{vel_color}">{rel_vel:+.2f} m/s</div>'
+            f'<div class="metric-sub" style="color:{vel_color}">{vel_status}</div></div>'
+            f'<div class="metric-tile"><div class="metric-label">OBSTACLE DIST</div>'
+            f'<div class="metric-value" style="color:{dist_color}">{dist_val}</div>'
+            f'<div class="metric-sub" style="color:var(--text-muted)">{near_label if near_label != "none" else "center"}</div></div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            f'<div class="panel-title">LIVE SAFETY METRICS</div>'
+            f'<div class="metric-grid">'
+            f'<div class="metric-tile"><div class="metric-label">FOG DENSITY</div>'
+            f'<div class="metric-value" style="color:{fog_color}">{fog_dens:.1f}%</div></div>'
+            f'<div class="metric-tile"><div class="metric-label">VISIBILITY</div>'
+            f'<div class="metric-value" style="font-size:1rem;color:var(--teal-dark)">{visibility}</div></div>'
+            f'<div class="metric-tile"><div class="metric-label">REC. SPEED</div>'
+            f'<div class="metric-value" style="color:var(--accent)">{rec_speed}</div><div class="metric-sub">km/h</div></div>'
+            f'<div class="metric-tile"><div class="metric-label">PIPELINE FPS</div>'
+            f'<div class="metric-value" style="color:var(--teal-mid)">{fps}</div></div>'
+            f'<div class="metric-tile"><div class="metric-label">NEAREST OBJ</div>'
+            f'<div class="metric-value" style="color:{dist_color}">{dist_val}</div>'
+            f'<div class="metric-sub" style="color:var(--text-muted)">{near_label if near_label != "none" else ""}</div></div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
     # ── RISK SCORE ENGINE ──
     risk_css    = {"LOW": "risk-LOW", "MEDIUM": "risk-MEDIUM", "HIGH": "risk-HIGH"}.get(risk_level, "risk-LOW")
@@ -904,10 +1375,11 @@ with left_col:
     else:
         alert_html = ""
         for alert in alerts:
-            is_crit = any(kw in alert for kw in ["CRITICAL", "DANGER", "🚨"])
-            is_warn = any(kw in alert for kw in ["⚠️", "🔴", "🌫️", "📍", "🔺"])
+            msg = alert.get("message", "") if isinstance(alert, dict) else str(alert)
+            is_crit = any(kw in msg for kw in ["CRITICAL", "DANGER", "🚨"])
+            is_warn = any(kw in msg for kw in ["⚠️", "🔴", "🌫️", "📍", "🔺"])
             css = "alert-critical" if is_crit else "alert-warn" if is_warn else "alert-info"
-            alert_html += f'<div class="{css}">{_html.escape(alert)}</div>'
+            alert_html += f'<div class="{css}">{_html.escape(msg)}</div>'
         st.markdown(alert_html, unsafe_allow_html=True)
 
 
@@ -987,55 +1459,118 @@ with right_col:
             unsafe_allow_html=True,
         )
 
-    # ── MAP — with red circle zones for blackspots ──
-    st.markdown('<div class="panel-title">GEOSPATIAL MAP — BLACKSPOTS & ROAD CONTEXT</div>', unsafe_allow_html=True)
+    if st.session_state.input_mode == "Live Feed (Sensor + USB Cam)":
+        st.markdown('<div class="panel-title">ADAS COGNITIVE SIMULATOR</div>', unsafe_allow_html=True)
+        
+        # Start/stop simulator subprocess based on run_loop
+        if st.session_state.run_loop:
+            if "sim_subprocess" not in st.session_state or st.session_state.sim_subprocess is None or st.session_state.sim_subprocess.poll() is not None:
+                import subprocess
+                import sys
+                python_exe = sys.executable
+                try:
+                    import os
+                    env = os.environ.copy()
+                    if "SDL_VIDEODRIVER" in env:
+                        del env["SDL_VIDEODRIVER"]
+                    log_file = open("sim_output.log", "w")
+                    st.session_state.sim_subprocess = subprocess.Popen(
+                        [python_exe, "simulation.py"],
+                        env=env,
+                        stdout=log_file,
+                        stderr=log_file
+                    )
+                except Exception as e:
+                    st.error(f"Failed to launch simulator window: {e}")
+            
+            st.markdown(
+                """
+                <div style='padding: 20px; background-color: rgba(6, 182, 212, 0.1); border: 1px solid #06b6d4; border-radius: 5px; text-align: center; margin-bottom: 20px;'>
+                    <h3 style='color: #06b6d4; margin-top:0;'>💻 Pygame Simulator Window Active</h3>
+                    <p style='color: #94a3b8; font-size: 14px; margin-bottom: 10px;'>
+                        An interactive, high-performance Pygame window has been opened on your desktop.
+                    </p>
+                    <div style='text-align: left; background-color: rgba(15, 23, 42, 0.5); padding: 12px; border-radius: 4px; display: inline-block;'>
+                        <span style='color: #22c55e;'>🎮 Controls:</span><br>
+                        <span style='color: #f8fafc;'>• UP / DOWN Arrow Keys:</span> <span style='color: #cbd5e1;'>Accelerate / Decelerate vehicle speed</span><br>
+                        <span style='color: #f8fafc;'>• LEFT / RIGHT Arrow Keys:</span> <span style='color: #cbd5e1;'>Steer vehicle left / right</span><br>
+                        <span style='color: #f8fafc;'>• No key inputs:</span> <span style='color: #cbd5e1;'>Vehicle centers itself and auto-reverts to ADAS telemetry</span>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        else:
+            # Terminate simulator if not running
+            if "sim_subprocess" in st.session_state and st.session_state.sim_subprocess is not None:
+                try:
+                    if st.session_state.sim_subprocess.poll() is None:
+                        st.session_state.sim_subprocess.terminate()
+                except Exception:
+                    pass
+                st.session_state.sim_subprocess = None
+                
+            st.markdown(
+                """
+                <div style='padding: 20px; background-color: rgba(148, 163, 184, 0.1); border: 1px solid #94a3b8; border-radius: 5px; text-align: center; margin-bottom: 20px;'>
+                    <h3 style='color: #94a3b8; margin-top:0;'>○ Simulator Standby</h3>
+                    <p style='color: #94a3b8; font-size: 14px; margin-bottom: 0;'>
+                        Start the Live Feed loop to automatically launch the interactive Pygame window on your desktop.
+                    </p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+    else:
+        # ── MAP — with red circle zones for blackspots ──
+        st.markdown('<div class="panel-title">GEOSPATIAL MAP — BLACKSPOTS & ROAD CONTEXT</div>', unsafe_allow_html=True)
 
-    m = folium.Map(location=[lat, lon], zoom_start=14, tiles="CartoDB positron")
+        m = folium.Map(location=[lat, lon], zoom_start=14, tiles="CartoDB positron")
 
-    # Vehicle marker
-    folium.Marker(
-        [lat, lon],
-        popup="<b>VEHICLE LOCATION</b>",
-        icon=folium.Icon(color="blue", icon="car", prefix="fa"),
-    ).add_to(m)
-
-    # Blackspot markers — red circle zone + pin
-    for i, spot in enumerate(road_context.get("blackspots", [])):
-        # Use actual coords from spot if available, otherwise offset for demo
-        spot_lat = spot.get("lat", lat + 0.002 * (i + 1))
-        spot_lon = spot.get("lon", lon + 0.002 * (i + 1))
-        severity = spot.get("severity", "medium")
-
-        # Outer danger zone circle (semi-transparent red fill)
-        folium.CircleMarker(
-            location=[spot_lat, spot_lon],
-            radius=38,
-            color="#FF0000",
-            weight=2,
-            fill=True,
-            fill_color="#FF0000",
-            fill_opacity=0.12,
-            tooltip=f"⚠ DANGER ZONE: {spot.get('name', 'Blackspot')}",
+        # Vehicle marker
+        folium.Marker(
+            [lat, lon],
+            popup="<b>VEHICLE LOCATION</b>",
+            icon=folium.Icon(color="blue", icon="car", prefix="fa"),
         ).add_to(m)
 
-        # Inner solid circle
-        folium.CircleMarker(
-            location=[spot_lat, spot_lon],
-            radius=10,
-            color="#CC0000",
-            weight=2.5,
-            fill=True,
-            fill_color="#FF2222",
-            fill_opacity=0.75,
-            popup=folium.Popup(
-                f"<b style='color:#CC0000'>⚠ {spot.get('name', 'Blackspot')}</b>"
-                f"<br>Severity: <b>{severity}</b>"
-                f"<br>Distance: {spot.get('distance', '?')} km",
-                max_width=200,
-            ),
-        ).add_to(m)
+        # Blackspot markers — red circle zone + pin
+        for i, spot in enumerate(road_context.get("blackspots", [])):
+            # Use actual coords from spot if available, otherwise offset for demo
+            spot_lat = spot.get("lat", lat + 0.002 * (i + 1))
+            spot_lon = spot.get("lon", lon + 0.002 * (i + 1))
+            severity = spot.get("severity", "medium")
 
-    st_folium(m, width=None, height=300, returned_objects=[])
+            # Outer danger zone circle (semi-transparent black fill)
+            folium.CircleMarker(
+                location=[spot_lat, spot_lon],
+                radius=38,
+                color="#000000",
+                weight=2,
+                fill=True,
+                fill_color="#000000",
+                fill_opacity=0.15,
+                tooltip=f"⚠ DANGER ZONE: {spot.get('name', 'Blackspot')}",
+            ).add_to(m)
+
+            # Inner solid circle
+            folium.CircleMarker(
+                location=[spot_lat, spot_lon],
+                radius=10,
+                color="#000000",
+                weight=2.5,
+                fill=True,
+                fill_color="#111111",
+                fill_opacity=0.8,
+                popup=folium.Popup(
+                    f"<b style='color:#000000'>⚠ {spot.get('name', 'Blackspot')}</b>"
+                    f"<br>Severity: <b>{severity}</b>"
+                    f"<br>Distance: {spot.get('distance', '?')} km",
+                    max_width=200,
+                ),
+            ).add_to(m)
+
+        st_folium(m, width=None, height=300, returned_objects=[])
 
     # ── ROAD CONTEXT ──
     road_name  = road_context.get("road",         "Unknown")
@@ -1083,6 +1618,50 @@ with right_col:
         unsafe_allow_html=True,
     )
 
+    # ── ESP32 SENSOR READINGS PANEL (Only in Live Feed mode) ──
+    if st.session_state.input_mode == "Live Feed (Sensor + USB Cam)" and latest_result:
+        st.markdown('<div class="panel-title" style="margin-top:10px;">ESP32 DISTANCE SENSOR READINGS</div>', unsafe_allow_html=True)
+        comparison = latest_result.get("sensor_comparison", {})
+        comp_rows_html = ""
+        for zone in ["left", "middle", "right"]:
+            zone_data  = comparison.get(zone, {"sensor": 80.0})
+            sens_dist  = zone_data.get("sensor", 80.0)
+            sens_val   = f"{sens_dist:.2f} m" if sens_dist < 80.0 else "-- m"
+
+            # Status colour based on real-world metre thresholds
+            if sens_dist < 0.30:
+                status_lbl   = "CRITICAL 🚨"
+                status_color = "var(--danger)"
+            elif sens_dist < 0.70:
+                status_lbl   = "WARNING ⚡"
+                status_color = "var(--warn)"
+            elif sens_dist < 80.0:
+                status_lbl   = "CLEAR ✅"
+                status_color = "var(--safe)"
+            else:
+                status_lbl   = "NO DATA"
+                status_color = "var(--text-muted)"
+
+            comp_rows_html += (
+                f'<div style="display:grid;grid-template-columns:1fr 1.4fr 1.6fr;'
+                f'padding:6px 0;border-bottom:1px solid var(--border);'
+                f'font-size:0.72rem;font-family:\'DM Mono\',monospace;">'
+                f'<span style="color:var(--teal-dark);font-weight:500;text-transform:uppercase;">{zone}</span>'
+                f'<span style="color:var(--text-secondary);">{sens_val}</span>'
+                f'<span style="color:{status_color};font-weight:600;">{status_lbl}</span>'
+                f'</div>'
+            )
+        st.markdown(
+            f'<div class="panel-card" style="padding:12px 14px; margin-bottom: 14px;">'
+            f'<div style="display:grid;grid-template-columns:1fr 1.4fr 1.6fr;'
+            f'padding:0 0 7px 0;border-bottom:1.5px solid var(--border-strong);'
+            f'font-size:0.58rem;letter-spacing:0.14em;color:var(--text-dim);font-family:\'DM Mono\',monospace;text-transform:uppercase;">'
+            f'<span>Zone</span><span>Sensor Dist</span><span>Status</span></div>'
+            f'{comp_rows_html}</div>',
+            unsafe_allow_html=True,
+        )
+
+
     # ── DETECTION TABLE ──
     if detections:
         st.markdown('<div class="panel-title" style="margin-top:10px;">DETECTION MANIFEST</div>', unsafe_allow_html=True)
@@ -1117,5 +1696,5 @@ with right_col:
 # AUTO-RERUN LOOP
 # ─────────────────────────────────────────────────────────────────────────────
 if st.session_state.run_loop and pipeline_ready:
-    time.sleep(0.05)
+    time.sleep(0.01)
     st.rerun()

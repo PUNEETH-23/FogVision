@@ -25,7 +25,7 @@ from ollama import chat
 # ---------------------------------------------------------------------------
 # MODEL CONFIG
 # ---------------------------------------------------------------------------
-MODEL_NAME = "qwen3:1.7b"          # swap to "deepseek-r1:1.5b" as needed
+MODEL_NAME = "fodvision-adas:v2"
 MAX_RETRIES = 2
 FOG_HISTORY_WINDOW = 5             # rolling window for trend analysis
 
@@ -37,10 +37,9 @@ You are a real-time AI-powered ADAS (Advanced Driver Assistance System) safety e
 
 ## Priority Order (highest to lowest)
 1. Collision avoidance — vehicle < 10 m ahead
-2. Emergency braking  — red brake-light glow detected
-3. Visibility hazards — fog_density > 70
-4. Speed adaptation   — road_type curve/wet
-5. General guidance
+2. Visibility hazards — fog_density > 70
+3. Speed adaptation   — road_type curve/wet
+4. General guidance
 
 ## Fog Reasoning Rules
 - fog_density >= 90  → CRITICAL visibility; cap speed at 20 km/h
@@ -56,9 +55,6 @@ You are a real-time AI-powered ADAS (Advanced Driver Assistance System) safety e
 - nearest_object_m 10–20 → MODERATE risk, increase following distance
 - nearest_object_m > 20  → LOW risk from proximity
 
-## Braking Rules
-- red_glow = true → assume vehicle ahead braking; elevate risk to HIGH minimum
-
 ## Output Contract
 Return ONLY a single valid JSON object. No markdown. No extra text.
 
@@ -68,7 +64,7 @@ Return ONLY a single valid JSON object. No markdown. No extra text.
   "recommended_speed": "<N km/h>",
   "driving_suggestion":"<actionable instruction, max 15 words>",
   "short_explanation": "<why, max 20 words>",
-  "priority_hazard":   "<collision | braking | visibility | speed | none>",
+  "priority_hazard":   "<collision | visibility | speed | none>",
   "voice_alert":       "<max 8 words, speech-ready>",
   "confidence":        <0.0–1.0>
 }
@@ -87,7 +83,6 @@ class DrivingContext:
     fog_trend: str = "stable"            # "worsening" | "stable" | "improving"
     nearest_object_m: float = 999.0      # distance to closest YOLO detection
     nearest_object_label: str = "none"   # e.g. "car", "truck", "pedestrian"
-    red_glow: bool = False               # brake-light glow detected
     road_type: str = "highway"           # "highway" | "curve" | "urban" | "wet"
     current_speed_kmh: float = 60.0      # ego vehicle speed
     timestamp: float = field(default_factory=time.time)
@@ -148,29 +143,24 @@ def filter_yolo_detections(detections: list[dict]) -> dict:
     """
     From a raw YOLO detection list, extract only:
       - nearest object (by estimated distance)
-      - any vehicle with red-glow flag
 
     Each detection dict expected shape:
       {
         "label": str,
-        "distance_m": float,
-        "red_glow": bool   (optional, default False)
+        "distance_m": float
       }
 
     Returns a minimal context dict for the LLM.
     """
     if not detections:
-        return {"nearest_object_m": 999.0, "nearest_object_label": "none", "red_glow": False}
+        return {"nearest_object_m": 999.0, "nearest_object_label": "none"}
 
     sorted_dets = sorted(detections, key=lambda d: d.get("distance_m", 999))
     nearest = sorted_dets[0]
 
-    red_glow = any(d.get("red_glow", False) for d in sorted_dets[:3])  # check top-3 nearest
-
     return {
         "nearest_object_m": nearest.get("distance_m", 999.0),
         "nearest_object_label": nearest.get("label", "unknown"),
-        "red_glow": red_glow,
     }
 
 
@@ -230,11 +220,11 @@ def _rule_based_fallback(ctx: DrivingContext) -> dict:
         suggestion = "Brake immediately and stop safely"
         priority = "collision" if ctx.nearest_object_m < 5 else "visibility"
         voice = "Stop now, critical hazard ahead"
-    elif ctx.red_glow or ctx.nearest_object_m < 10:
-        risk, speed, hazard = "HIGH", 30, "Vehicle braking or very close ahead"
+    elif ctx.nearest_object_m < 10:
+        risk, speed, hazard = "HIGH", 30, "Vehicle very close ahead"
         suggestion = "Slow down and increase following distance"
-        priority = "braking" if ctx.red_glow else "collision"
-        voice = "Slow down, vehicle ahead braking"
+        priority = "collision"
+        voice = "Slow down, vehicle ahead"
     elif ctx.fog_density >= 70:
         risk, speed, hazard = "HIGH", 40, "Dense fog — severely reduced visibility"
         suggestion = "Reduce speed and use fog lights"
@@ -304,7 +294,7 @@ def get_llm_decision(
                 ],
                 options={"temperature": 0.1},   # low temp → deterministic safety output
             )
-            raw_text: str = response.message.content
+            raw_text: str = response['message']['content'] if isinstance(response, dict) else response.message.content
 
             parsed = _safe_parse_json(raw_text)
 
@@ -331,42 +321,42 @@ def get_llm_decision(
 DATASET_EXAMPLES: list[dict] = [
     # ── CRITICAL scenarios ──────────────────────────────────────────────
     {
-        "input": {"fog_density": 95, "nearest_object_m": 4, "red_glow": True,  "road_type": "curve",   "fog_trend": "worsening"},
-        "output": {"risk_level": "CRITICAL", "hazard_alert": "Braking vehicle 4m ahead in critical fog", "recommended_speed": "0 km/h",  "driving_suggestion": "Emergency brake — stop immediately", "priority_hazard": "collision", "voice_alert": "Emergency brake now"},
+        "input": {"fog_density": 95, "nearest_object_m": 4, "road_type": "curve",   "fog_trend": "worsening"},
+        "output": {"risk_level": "CRITICAL", "hazard_alert": "Vehicle 4m ahead in critical fog", "recommended_speed": "0 km/h",  "driving_suggestion": "Emergency brake — stop immediately", "priority_hazard": "collision", "voice_alert": "Emergency brake now"},
     },
     {
-        "input": {"fog_density": 92, "nearest_object_m": 3, "red_glow": False, "road_type": "highway", "fog_trend": "worsening"},
+        "input": {"fog_density": 92, "nearest_object_m": 3, "road_type": "highway", "fog_trend": "worsening"},
         "output": {"risk_level": "CRITICAL", "hazard_alert": "Object 3m ahead in critical fog",          "recommended_speed": "0 km/h",  "driving_suggestion": "Brake hard and stop safely",         "priority_hazard": "collision", "voice_alert": "Stop now, object very close"},
     },
     # ── HIGH scenarios ───────────────────────────────────────────────────
     {
-        "input": {"fog_density": 85, "nearest_object_m": 9, "red_glow": True,  "road_type": "highway", "fog_trend": "stable"},
-        "output": {"risk_level": "HIGH",     "hazard_alert": "Braking vehicle 9m ahead in dense fog",   "recommended_speed": "25 km/h", "driving_suggestion": "Slow down and increase following distance", "priority_hazard": "braking",   "voice_alert": "Vehicle braking, slow down"},
+        "input": {"fog_density": 85, "nearest_object_m": 9, "road_type": "highway", "fog_trend": "stable"},
+        "output": {"risk_level": "HIGH",     "hazard_alert": "Vehicle 9m ahead in dense fog",   "recommended_speed": "25 km/h", "driving_suggestion": "Slow down and increase following distance", "priority_hazard": "collision",   "voice_alert": "Vehicle close, slow down"},
     },
     {
-        "input": {"fog_density": 78, "nearest_object_m": 15, "red_glow": True,  "road_type": "curve",  "fog_trend": "worsening"},
-        "output": {"risk_level": "HIGH",     "hazard_alert": "Braking vehicle on foggy curve",          "recommended_speed": "30 km/h", "driving_suggestion": "Reduce speed immediately on curve",   "priority_hazard": "braking",   "voice_alert": "Brake light ahead, slow down"},
+        "input": {"fog_density": 78, "nearest_object_m": 15, "road_type": "curve",  "fog_trend": "worsening"},
+        "output": {"risk_level": "HIGH",     "hazard_alert": "Vehicle ahead on foggy curve",          "recommended_speed": "30 km/h", "driving_suggestion": "Reduce speed immediately on curve",   "priority_hazard": "collision",   "voice_alert": "Vehicle ahead, slow down"},
     },
     {
-        "input": {"fog_density": 82, "nearest_object_m": 25, "red_glow": False, "road_type": "urban",  "fog_trend": "stable"},
+        "input": {"fog_density": 82, "nearest_object_m": 25, "road_type": "urban",  "fog_trend": "stable"},
         "output": {"risk_level": "HIGH",     "hazard_alert": "Dense fog in urban area",                 "recommended_speed": "35 km/h", "driving_suggestion": "Use fog lights and reduce speed",      "priority_hazard": "visibility","voice_alert": "Dense fog, use fog lights"},
     },
     # ── MODERATE scenarios ───────────────────────────────────────────────
     {
-        "input": {"fog_density": 60, "nearest_object_m": 18, "red_glow": False, "road_type": "highway", "fog_trend": "stable"},
+        "input": {"fog_density": 60, "nearest_object_m": 18, "road_type": "highway", "fog_trend": "stable"},
         "output": {"risk_level": "MODERATE", "hazard_alert": "Moderate fog reduces visibility",         "recommended_speed": "50 km/h", "driving_suggestion": "Maintain safe distance and stay alert","priority_hazard": "visibility","voice_alert": "Fog ahead, reduce speed"},
     },
     {
-        "input": {"fog_density": 55, "nearest_object_m": 12, "red_glow": False, "road_type": "wet",    "fog_trend": "improving"},
+        "input": {"fog_density": 55, "nearest_object_m": 12, "road_type": "wet",    "fog_trend": "improving"},
         "output": {"risk_level": "MODERATE", "hazard_alert": "Wet road with moderate fog",              "recommended_speed": "45 km/h", "driving_suggestion": "Slow for wet road surface",           "priority_hazard": "speed",     "voice_alert": "Wet road, slow down"},
     },
     # ── LOW scenarios ────────────────────────────────────────────────────
     {
-        "input": {"fog_density": 20, "nearest_object_m": 40, "red_glow": False, "road_type": "highway", "fog_trend": "improving"},
+        "input": {"fog_density": 20, "nearest_object_m": 40, "road_type": "highway", "fog_trend": "improving"},
         "output": {"risk_level": "LOW",      "hazard_alert": "Clear highway conditions",                "recommended_speed": "80 km/h", "driving_suggestion": "Maintain speed and stay aware",       "priority_hazard": "none",      "voice_alert": "Conditions clear, drive safely"},
     },
     {
-        "input": {"fog_density": 10, "nearest_object_m": 60, "red_glow": False, "road_type": "urban",  "fog_trend": "stable"},
+        "input": {"fog_density": 10, "nearest_object_m": 60, "road_type": "urban",  "fog_trend": "stable"},
         "output": {"risk_level": "LOW",      "hazard_alert": "No significant hazards detected",         "recommended_speed": "50 km/h", "driving_suggestion": "Observe speed limits in urban zone",  "priority_hazard": "none",      "voice_alert": "All clear, drive carefully"},
     },
 ]
@@ -388,10 +378,10 @@ if __name__ == "__main__":
 
     # Simulate a worsening fog sequence
     sensor_frames = [
-        {"fog_density": 45, "detections": [{"label": "car", "distance_m": 35, "red_glow": False}]},
-        {"fog_density": 60, "detections": [{"label": "car", "distance_m": 20, "red_glow": False}]},
-        {"fog_density": 78, "detections": [{"label": "truck","distance_m": 9,  "red_glow": True }]},
-        {"fog_density": 88, "detections": [{"label": "car", "distance_m": 6,  "red_glow": True }]},
+        {"fog_density": 45, "detections": [{"label": "car", "distance_m": 35}]},
+        {"fog_density": 60, "detections": [{"label": "car", "distance_m": 20}]},
+        {"fog_density": 78, "detections": [{"label": "truck","distance_m": 9}]},
+        {"fog_density": 88, "detections": [{"label": "car", "distance_m": 6}]},
     ]
 
     print("=" * 60)
@@ -408,12 +398,11 @@ if __name__ == "__main__":
             fog_trend=trend,
             nearest_object_m=yolo_ctx["nearest_object_m"],
             nearest_object_label=yolo_ctx["nearest_object_label"],
-            red_glow=yolo_ctx["red_glow"],
             road_type="highway",
             current_speed_kmh=70.0,
         )
 
-        print(f"\n── Frame {i}  fog={fog_density}  trend={trend}  nearest={ctx.nearest_object_m}m  red_glow={ctx.red_glow}")
+        print(f"\n── Frame {i}  fog={fog_density}  trend={trend}  nearest={ctx.nearest_object_m}m")
         result = get_llm_decision(ctx)
         print(json.dumps(result, indent=2))
 

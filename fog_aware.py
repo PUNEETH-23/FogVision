@@ -9,6 +9,15 @@ import numpy as np
 import cv2
 from typing import Dict, Tuple, Optional
 from dataclasses import dataclass
+import sys
+import os
+
+# Append PyFADE src path to import pyfade
+_pyfade_src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "PyFADE", "src"))
+if _pyfade_src_path not in sys.path:
+    sys.path.insert(0, _pyfade_src_path)
+
+from pyfade import fade
 
 
 @dataclass
@@ -60,6 +69,23 @@ class FogAwarePreprocessor:
         self.frame_width = width
         self.frame_height = height
 
+    def set_condition_density(self, density: float) -> FogCondition:
+        """Manually set and calculate a static fog condition."""
+        visibility, recommended_speed = self._get_visibility_info(density)
+        threshold_multiplier = self._get_threshold_multiplier(density)
+        confidence_threshold = self.base_confidence_threshold * threshold_multiplier
+        detection_multiplier = self._get_detection_multiplier(density)
+        
+        self._current_condition = FogCondition(
+            density=round(density, 1),
+            visibility=visibility,
+            recommended_speed=recommended_speed,
+            confidence_threshold=round(confidence_threshold, 2),
+            detection_multiplier=round(detection_multiplier, 2),
+        )
+        self.fog_history = [density]
+        return self._current_condition
+
     def analyze_fog(self, frame: np.ndarray) -> FogCondition:
         """
         Analyze fog conditions in the frame.
@@ -73,15 +99,19 @@ class FogAwarePreprocessor:
         -------
         FogCondition with analysis results
         """
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        mean_brightness = np.mean(gray)
-        std_brightness = np.std(gray)
-
-        brightness_score = (255 - mean_brightness) / 255
-        contrast_score = std_brightness / 128
-
-        fog_density = (brightness_score * 0.6 + (1 - contrast_score) * 0.4) * 100
+        try:
+            fade_score = fade(frame)
+            fog_density = ((fade_score - 0.3) / 2.7) * 100.0
+            fog_density = max(0.0, min(100.0, fog_density))
+        except Exception as e:
+            print(f"[PyFADE] Error in analyze_fog: {e}")
+            # fallback
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            mean_brightness = np.mean(gray)
+            std_brightness = np.std(gray)
+            brightness_score = (255 - mean_brightness) / 255
+            contrast_score = std_brightness / 128
+            fog_density = (brightness_score * 0.6 + (1 - contrast_score) * 0.4) * 100
 
         self.fog_history.append(fog_density)
         if len(self.fog_history) > self.history_size:

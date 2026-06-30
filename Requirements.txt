@@ -22,3 +22,10 @@ streamlit-js-eval==0.1.1
 folium==0.14.0
 requests==2.31.0
 ollama==0.1.9
+pygame>=2.5.2
+keyboard>=0.13.5
+scipy>=1.12.0
+PyTurboJPEG>=1.7.2
+tqdm>=4.66.2
+flask>=3.0.2
+imageio-ffmpeg>=0.4.9

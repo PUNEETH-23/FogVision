@@ -1,0 +1,13 @@
+{
+  "running": false,
+  "speed": 0.0,
+  "braking": false,
+  "alerts": [],
+  "esp32_sensor_data": {
+    "left": 80.0,
+    "middle": 80.0,
+    "right": 80.0
+  },
+  "esp32_ip": "10.248.116.230",
+  "last_update": 1782373154.5606828
+}

@@ -38,10 +38,10 @@ _MED_MAX    = 0.60
 def compute_risk(
     fog_density:         float,          # 0 – 100
     distance_to_nearest: float,          # metres  (0 = no object)
-    recommended_speed:   float,          # km/h from fog module
+    actual_speed:        float,          # km/h of the vehicle (from Vehicular setting)
     road_context:        Dict[str, Any], # from road_context.py
-    red_glow:            bool,           # from red_glow.py
     humidity:            float = 0.0,    # 0 – 100 (placeholder)
+    is_live:             bool = False,   # scale thresholds for physical car
 ) -> Dict[str, Any]:
     """
     Returns
@@ -55,6 +55,22 @@ def compute_risk(
     }
     """
 
+    # If vehicle speed is near zero, the risk is zero.
+    if actual_speed < 3.0:
+        return {
+            "risk_score":        0.0,
+            "risk_level":        "LOW",
+            "component_scores":  {
+                "fog":      0.0,
+                "distance": 0.0,
+                "speed":    0.0,
+                "road":     0.0,
+                "humidity": 0.0,
+            },
+            "hard_override":     False,
+            "override_reason":   "",
+        }
+
     # ── 1. Fog component (0–1) ────────────────────────────────────────
     fog_component = _normalise(fog_density, 0.0, 100.0)
 
@@ -62,12 +78,20 @@ def compute_risk(
     if distance_to_nearest <= 0:
         dist_component = 0.0          # no vehicle seen → no distance risk
     else:
-        # Risk saturates at 5 m (certain collision zone)
-        dist_component = _normalise_inv(distance_to_nearest, 5.0, 60.0)
+        # Scale for live physical car vs. simulated highway
+        if is_live:
+            # Risk saturates at 0.25 m (danger) and drops off at 1.5 m
+            dist_component = _normalise_inv(distance_to_nearest, 0.25, 1.5)
+        else:
+            # Risk saturates at 5 m (certain collision zone)
+            dist_component = _normalise_inv(distance_to_nearest, 5.0, 60.0)
 
-    # ── 3. Speed component (higher recommended = lower risk remaining) ─
-    # Invert: recommended_speed 20 km/h means conditions are bad.
-    speed_component = _normalise_inv(recommended_speed, 20.0, 80.0)
+    # ── 3. Speed component (higher actual speed = higher risk) ──────
+    speed_component = _normalise(actual_speed, 0.0, 120.0)
+
+    # Boost speed risk component if fog is dense
+    if fog_density > 60.0:
+        speed_component = min(speed_component * 1.5, 1.0)
 
     # ── 4. Road context component ─────────────────────────────────────
     blackspot_bonus = 0.4 if road_context.get("blackspots") else 0.0
@@ -75,19 +99,15 @@ def compute_risk(
     curve_bonus     = 0.3 if "curve" in road_type_str else 0.0
     road_component  = min(blackspot_bonus + curve_bonus, 1.0)
 
-    # ── 5. Red glow component ─────────────────────────────────────────
-    glow_component  = 1.0 if red_glow else 0.0
-
-    # ── 6. Humidity component (future) ────────────────────────────────
+    # ── 5. Humidity component (future) ────────────────────────────────
     hum_component   = _normalise(humidity, 0.0, 100.0)
 
     # ── Weighted sum ──────────────────────────────────────────────────
     weights = {
-        "fog":      0.30,
-        "distance": 0.25,
+        "fog":      0.35,
+        "distance": 0.30,
         "speed":    0.20,
         "road":     0.10,
-        "red_glow": 0.10,
         "humidity": 0.05,
     }
     components = {
@@ -95,7 +115,6 @@ def compute_risk(
         "distance": round(dist_component, 3),
         "speed":    round(speed_component,3),
         "road":     round(road_component, 3),
-        "red_glow": round(glow_component, 3),
         "humidity": round(hum_component,  3),
     }
 
@@ -106,21 +125,35 @@ def compute_risk(
     hard_override   = False
     override_reason = ""
 
-    if red_glow and 0 < distance_to_nearest < 20:
+    crit_dist = 0.30 if is_live else 10.0
+    curve_dist = 0.60 if is_live else 25.0
+
+    # Fog-based safe speed limits
+    if fog_density >= 80.0:
+        max_safe_speed = 30.0
+    elif fog_density >= 60.0:
+        max_safe_speed = 50.0
+    elif fog_density >= 40.0:
+        max_safe_speed = 70.0
+    else:
+        max_safe_speed = 100.0
+
+    if actual_speed > max_safe_speed:
         raw_score       = max(raw_score, 0.70)
         hard_override   = True
-        override_reason = "Red glow + vehicle within 20 m"
+        override_reason = f"Speed ({actual_speed:.1f} km/h) exceeds safe limit ({max_safe_speed} km/h) in fog"
 
-    if 0 < distance_to_nearest < 10:
+    if 0 < distance_to_nearest < crit_dist:
         raw_score       = max(raw_score, 0.70)
-        hard_override   = True
-        override_reason = "Vehicle within 10 m"
+        if not hard_override:
+            hard_override   = True
+            override_reason = f"Vehicle within {crit_dist:.2f} m"
 
-    if "curve" in road_type_str and 0 < distance_to_nearest < 25:
+    if "curve" in road_type_str and 0 < distance_to_nearest < curve_dist:
         raw_score       = max(raw_score, 0.35)
         if not hard_override:
             hard_override   = True
-            override_reason = "Curve + vehicle within 25 m"
+            override_reason = f"Curve + vehicle within {curve_dist:.2f} m"
 
     final_score = round(min(raw_score, 1.0), 4)
 

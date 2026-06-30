@@ -77,7 +77,7 @@ class FogImpactTester:
             result = dcp_estimate_fog_density(frame)
             end_time = time.time()
             self._current_dcp_time = end_time - start_time
-            return result.get("fog_density", 0.0)
+            return float(result) if isinstance(result, (int, float)) else result.get("fog_density", 0.0)
         except Exception as e:
             print(f"  DCP estimation error: {e}")
             self._current_dcp_time = 0.0

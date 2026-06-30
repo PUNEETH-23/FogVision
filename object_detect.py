@@ -89,7 +89,7 @@ def detect_traffic_light_color(roi):
 # MAIN DETECTION FUNCTION
 # ---------------------------------------------------
 
-def process_frame(frame):
+def process_frame(frame, is_video=False):
 
     """
     Input:
@@ -105,6 +105,7 @@ def process_frame(frame):
     # YOLO detection
     results = model(
         frame,
+        imgsz=320,
         device=_DEVICE,
         half=_HAS_CUDA,
         verbose=False
@@ -129,8 +130,14 @@ def process_frame(frame):
             continue
 
         cls_id = int(box.cls[0])
-
         label = model.names[cls_id]
+
+        # Only allow standard road-relevant objects to prevent clutter
+        _ROAD_CLASSES = {"person", "bicycle", "car", "motorcycle", "bus", "train", "truck", "traffic light", "stop sign"}
+        if label not in _ROAD_CLASSES:
+            continue
+
+
 
         color = (0,255,0)
 
@@ -161,23 +168,23 @@ def process_frame(frame):
         # DRAW BOX
         # ---------------------------------------------------
 
-        cv2.rectangle(
-            annotated,
-            (x1, y1),
-            (x2, y2),
-            color,
-            2
-        )
-
-        cv2.putText(
-            annotated,
-            f"{label}{'' if not traffic_light_color else f': {traffic_light_color}'} {conf:.2f}",
-            (x1, y1 - 10),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            color,
-            2
-        )
+        if not is_video:
+            cv2.rectangle(
+                annotated,
+                (x1, y1),
+                (x2, y2),
+                color,
+                2
+            )
+            cv2.putText(
+                annotated,
+                f"{label}{'' if not traffic_light_color else f': {traffic_light_color}'} {conf:.2f}",
+                (x1, y1 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                color,
+                2
+            )
 
         # ---------------------------------------------------
         # SAVE DETECTION DATA

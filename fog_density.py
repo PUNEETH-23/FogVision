@@ -1,90 +1,15 @@
 import cv2
 import numpy as np
 from typing import Union
+import sys
+import os
 
+# Append PyFADE src path to import pyfade
+_pyfade_src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "PyFADE", "src"))
+if _pyfade_src_path not in sys.path:
+    sys.path.insert(0, _pyfade_src_path)
 
-def get_dark_channel(img, window_size=15):
-
-    min_channel = np.min(img, axis=2)
-
-    kernel = cv2.getStructuringElement(
-
-        cv2.MORPH_RECT,
-
-        (window_size, window_size)
-    )
-
-    dark_channel = cv2.erode(
-
-        min_channel,
-
-        kernel
-    )
-
-    return dark_channel
-
-
-def get_atmospheric_light(img, dark_channel):
-
-    h, w = img.shape[:2]
-
-    num_pixels = h * w
-
-    num_brightest = int(max(num_pixels * 0.001, 1))
-
-    dark_vec = dark_channel.reshape(num_pixels)
-
-    img_vec = img.reshape(num_pixels, 3)
-
-    indices = np.argsort(dark_vec)[::-1][:num_brightest]
-
-    atmospheric_light = np.mean(
-
-        img_vec[indices],
-
-        axis=0
-    )
-
-    return atmospheric_light
-
-
-def get_transmission_map(
-
-    img,
-
-    atmospheric_light,
-
-    window_size=15,
-
-    omega=0.95
-):
-
-    norm_img = np.zeros_like(
-
-        img,
-
-        dtype=np.float64
-    )
-
-    for i in range(3):
-
-        norm_img[:, :, i] = (
-
-            img[:, :, i]
-            /
-            max(atmospheric_light[i], 1e-6)
-        )
-
-    transmission = (
-
-        1
-        -
-        omega
-        *
-        get_dark_channel(norm_img, window_size)
-    )
-
-    return transmission
+from pyfade import fade
 
 
 def _prepare_image(image_or_path: Union[str, np.ndarray]) -> np.ndarray:
@@ -104,78 +29,28 @@ def _prepare_image(image_or_path: Union[str, np.ndarray]) -> np.ndarray:
     return img
 
 
-def estimate_fog_density(image_or_path: Union[str, np.ndarray]):
-
+def estimate_fog_density(image_or_path: Union[str, np.ndarray]) -> float:
+    """
+    Estimate fog density using PyFADE only.
+    Returns:
+        float: percentage fog density (0.0 to 100.0)
+    """
     img = _prepare_image(image_or_path)
-    img_float = img.astype(np.float64) / 255.0
 
-    # ---------------------------------------------------
-    # DARK CHANNEL
-    # ---------------------------------------------------
+    try:
+        fade_score = fade(img)
+        # Scale FADE score from range [0.3, 3.0] to [0.0, 100.0] percentage
+        fog_density_score = ((fade_score - 0.3) / 2.7) * 100.0
+        fog_density_score = max(0.0, min(100.0, fog_density_score))
+    except Exception as e:
+        print(f"[PyFADE] Error in estimate_fog_density: {e}")
+        # fallback based on basic image statistics
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        mean_brightness = np.mean(gray)
+        std_brightness = np.std(gray)
+        brightness_score = (255 - mean_brightness) / 255
+        contrast_score = std_brightness / 128
+        fog_density_score = (brightness_score * 0.6 + (1 - contrast_score) * 0.4) * 100
+        fog_density_score = max(0.0, min(100.0, fog_density_score))
 
-    dark_channel = get_dark_channel(img_float)
-
-    # ---------------------------------------------------
-    # ATMOSPHERIC LIGHT
-    # ---------------------------------------------------
-
-    atmospheric_light = get_atmospheric_light(
-
-        img_float,
-
-        dark_channel
-    )
-
-    # ---------------------------------------------------
-    # TRANSMISSION MAP
-    # ---------------------------------------------------
-
-    transmission_map = get_transmission_map(
-
-        img_float,
-
-        atmospheric_light
-    )
-
-    # ---------------------------------------------------
-    # VISUAL MAPS
-    # ---------------------------------------------------
-
-    dark_channel_visual = (
-
-        dark_channel * 255
-    ).astype(np.uint8)
-
-    transmission_visual = (
-
-        transmission_map * 255
-    ).astype(np.uint8)
-
-    # ---------------------------------------------------
-    # FOG DENSITY SCORE
-    # ---------------------------------------------------
-
-    fog_density_score = np.mean(
-
-        dark_channel
-    ) * 100
-
-    fog_density_score = round(
-
-        fog_density_score,
-
-        2
-    )
-
-    # ---------------------------------------------------
-    # RETURN
-    # ---------------------------------------------------
-
-    return {
-
-        "dark_channel": dark_channel_visual,
-
-        "transmission_map": transmission_visual,
-
-        "fog_density": fog_density_score
-    }
+    return round(fog_density_score, 2)
