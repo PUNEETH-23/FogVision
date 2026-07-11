@@ -683,7 +683,7 @@ with st.expander("🔧 SYSTEM CONFIGURATION", expanded=True):
     if "haze_intensity" not in st.session_state:
         st.session_state.haze_intensity = 0.0
     if "esp32_ip" not in st.session_state:
-        st.session_state.esp32_ip = "10.248.116.230"
+        st.session_state.esp32_ip = "localhost"
     if "control_mode" not in st.session_state:
         st.session_state.control_mode = "Manual Control"
     if "cruising_speed" not in st.session_state:
@@ -717,14 +717,7 @@ with st.expander("🔧 SYSTEM CONFIGURATION", expanded=True):
             if fog_data:
                 fog_density = fog_data.get("fog_density", 0.0)
  
-        if fog_density >= 80.0:
-            max_safe_speed = 30.0
-        elif fog_density >= 60.0:
-            max_safe_speed = 50.0
-        elif fog_density >= 40.0:
-            max_safe_speed = 70.0
-        else:
-            max_safe_speed = 100.0
+        max_safe_speed = max(20.0, 100.0 - fog_density)
  
         current_val = float(st.session_state.vehicular_speed)
         if current_val > max_safe_speed:
@@ -750,7 +743,7 @@ with st.expander("🔧 SYSTEM CONFIGURATION", expanded=True):
         
         # Initialize default IP if not set
         if "esp32_ip" not in st.session_state:
-            st.session_state.esp32_ip = "10.248.116.230"
+            st.session_state.esp32_ip = "localhost"
             
         col_ip, col_btn = st.columns([3, 1])
         with col_ip:
@@ -1541,14 +1534,14 @@ with right_col:
             spot_lon = spot.get("lon", lon + 0.002 * (i + 1))
             severity = spot.get("severity", "medium")
 
-            # Outer danger zone circle (semi-transparent black fill)
+            # Outer danger zone circle (semi-transparent red fill)
             folium.CircleMarker(
                 location=[spot_lat, spot_lon],
                 radius=38,
-                color="#000000",
+                color="#FF3333",
                 weight=2,
                 fill=True,
-                fill_color="#000000",
+                fill_color="#FF3333",
                 fill_opacity=0.15,
                 tooltip=f"⚠ DANGER ZONE: {spot.get('name', 'Blackspot')}",
             ).add_to(m)
@@ -1557,10 +1550,10 @@ with right_col:
             folium.CircleMarker(
                 location=[spot_lat, spot_lon],
                 radius=10,
-                color="#000000",
+                color="#FF3333",
                 weight=2.5,
                 fill=True,
-                fill_color="#111111",
+                fill_color="#FF3333",
                 fill_opacity=0.8,
                 popup=folium.Popup(
                     f"<b style='color:#000000'>⚠ {spot.get('name', 'Blackspot')}</b>"

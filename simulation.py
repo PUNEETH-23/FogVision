@@ -378,24 +378,30 @@ def main():
                     speed_val = -speed_val
                 
                 current_sent_time = time.time()
-                if (current_sent_time - last_esp32_sent_time > 0.08 or 
-                    last_esp32_sent_speed != speed_val or 
-                    last_esp32_sent_turn != turn_value):
+                is_stopped_now = (speed_val == 0 and turn_value == 0)
+                was_stopped_before = (last_esp32_sent_speed == 0 and last_esp32_sent_turn == 0)
+                should_send = not (is_stopped_now and was_stopped_before)
+
+                if should_send:
+                    time_elapsed = current_sent_time - last_esp32_sent_time
+                    value_changed = (last_esp32_sent_speed != speed_val or 
+                                     last_esp32_sent_turn != turn_value)
                     
-                    last_esp32_sent_time = current_sent_time
-                    last_esp32_sent_speed = speed_val
-                    last_esp32_sent_turn = turn_value
-                    
-                    def send_esp32_control_sim(ip, s, t):
-                        import esp32_module
-                        esp32_module.send_motor_speed(ip, s, t, timeout=0.30)
-                    
-                    import threading
-                    threading.Thread(
-                        target=send_esp32_control_sim, 
-                        args=(esp32_ip, speed_val, turn_value), 
-                        daemon=True
-                    ).start()
+                    if last_esp32_sent_speed is None or value_changed or time_elapsed > 0.08:
+                        last_esp32_sent_time = current_sent_time
+                        last_esp32_sent_speed = speed_val
+                        last_esp32_sent_turn = turn_value
+                        
+                        def send_esp32_control_sim(ip, s, t):
+                            import esp32_module
+                            esp32_module.send_motor_speed(ip, s, t, timeout=0.30)
+                        
+                        import threading
+                        threading.Thread(
+                            target=send_esp32_control_sim, 
+                            args=(esp32_ip, speed_val, turn_value), 
+                            daemon=True
+                        ).start()
         elif state.get("manual_control", False):
             # Reset manual control flag once when returning to auto control
             state["manual_control"] = False

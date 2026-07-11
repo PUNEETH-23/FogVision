@@ -41,7 +41,11 @@ def get_road_context(lat: float, lon: float) -> Dict[str, Any]:
         data = response.json()
         raw_location = data
         address = data.get("address", {})
-        road = address.get("road", road)
+        road = (address.get("road") or 
+                address.get("suburb") or 
+                address.get("neighbourhood") or 
+                address.get("city") or 
+                road)
     except requests.RequestException:
         data = {}
 
@@ -81,6 +85,8 @@ def get_road_context(lat: float, lon: float) -> Dict[str, Any]:
         if distance < 2.0:
             nearby_blackspots.append({
                 "name": spot["name"],
+                "lat": spot["latitude"],
+                "lon": spot["longitude"],
                 "distance": round(distance, 2),
                 "severity": spot.get("severity", "unknown"),
                 "fog_prone": bool(spot.get("fog_prone", False)),

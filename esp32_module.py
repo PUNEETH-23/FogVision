@@ -46,11 +46,12 @@ def send_motor_speed(ip: str, speed: int, turn: int = 0, timeout: float = 0.1) -
         pass
     return False
 
-# Standalone interactive controller using keyboard
 if __name__ == "__main__":
     import keyboard
+    import sys
+    import os
     
-    ESP32_IP = "10.60.164.230"
+    ESP32_IP = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("ESP32_IP", "localhost")
     print(f"=== ESP32 Car Standalone keyboard Controller (IP: {ESP32_IP}) ===")
     print("UP    = Forward")
     print("DOWN  = Reverse")

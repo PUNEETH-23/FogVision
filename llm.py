@@ -14,18 +14,22 @@ Improvements over baseline:
 from __future__ import annotations
 
 import json
+import os
 import time
 from collections import deque
 from dataclasses import asdict, dataclass, field
 from typing import Any, Optional
 
-# pyrefly: ignore [missing-import]
-from ollama import chat
+from dotenv import load_dotenv
+from groq import Groq
+
+# Load environment variables
+load_dotenv()
 
 # ---------------------------------------------------------------------------
 # MODEL CONFIG
 # ---------------------------------------------------------------------------
-MODEL_NAME = "fodvision-adas:v2"
+MODEL_NAME = "llama-3.1-8b-instant"
 MAX_RETRIES = 2
 FOG_HISTORY_WINDOW = 5             # rolling window for trend analysis
 
@@ -286,15 +290,21 @@ def get_llm_decision(
     last_error: str = ""
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            response = chat(
+            api_key = os.environ.get("GROQ_API_KEY")
+            if not api_key or api_key == "your_groq_api_key_here":
+                raise ValueError("GROQ_API_KEY is not configured in .env file.")
+
+            client = Groq(api_key=api_key)
+            response = client.chat.completions.create(
                 model=MODEL_NAME,
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user",   "content": user_prompt},
                 ],
-                options={"temperature": 0.1},   # low temp → deterministic safety output
+                temperature=0.1,
+                response_format={"type": "json_object"}
             )
-            raw_text: str = response['message']['content'] if isinstance(response, dict) else response.message.content
+            raw_text: str = response.choices[0].message.content
 
             parsed = _safe_parse_json(raw_text)
 
@@ -307,7 +317,7 @@ def get_llm_decision(
             last_error = f"Schema validation failed on attempt {attempt}"
 
         except Exception as exc:
-            last_error = f"Ollama error on attempt {attempt}: {exc}"
+            last_error = f"Groq error on attempt {attempt}: {exc}"
 
     # All retries exhausted → rule-based fallback
     result = _rule_based_fallback(ctx_obj)

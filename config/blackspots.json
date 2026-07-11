@@ -227,5 +227,7 @@
   "visibility_level": "medium",
   "risk_score": 9,
   "notes": "High-risk zone near RV College due to Mysore Road congestion, fast-moving vehicles, frequent rain-related skidding, pedestrian crossings, and peak-hour traffic density"
-}
+},
+  {"name": "IISc Bangalore Corridor", "state": "Karnataka", "latitude": 13.001240, "longitude": 77.572678, "road_type": "Urban Road", "accident_prone": true, "fog_prone": false, "rain_prone": true, "landslide_prone": false, "severity": "medium", "speed_limit": 50, "road_condition": "heavy traffic and pedestrian crossing", "weather_risk": "moderate rain", "visibility_level": "medium", "risk_score": 7, "notes": "Accident-prone urban zone near IISc Bangalore main road"},
+  {"name": "Mysore Road RV College Junction", "state": "Karnataka", "latitude": 12.9238149, "longitude": 77.4960784, "road_type": "National Highway / Expressway Access", "accident_prone": true, "fog_prone": false, "rain_prone": true, "landslide_prone": false, "severity": "high", "speed_limit": 80, "road_condition": "high speed and sudden merging", "weather_risk": "heavy rain", "visibility_level": "low", "risk_score": 9, "notes": "High-speed crash zone on Mysore Road near RV College entrance"}
 ]

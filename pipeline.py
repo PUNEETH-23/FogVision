@@ -146,7 +146,7 @@ class ADASPipeline:
         speed_kmh:        float = 50.0,
         is_live:          bool = False,
         haze_intensity:   float = 0.0,
-        esp32_ip:         str = "10.248.116.230",
+        esp32_ip:         str = "localhost",
         control_mode:     str = "Manual Control",
         cruising_speed:   float = 50.0
     ) -> dict:
@@ -519,14 +519,7 @@ class ADASPipeline:
                 
             # Apply fog-based safe speed limit
             # Calculate max safe speed limit based on estimated fog density:
-            if fog_density >= 80.0:
-                max_safe_speed = 30.0
-            elif fog_density >= 60.0:
-                max_safe_speed = 50.0
-            elif fog_density >= 40.0:
-                max_safe_speed = 70.0
-            else:
-                max_safe_speed = 100.0
+            max_safe_speed = max(20.0, 100.0 - fog_density)
 
             # Map max safe speed (km/h) to motor scale (0-100)
             fog_speed_cap = int((max_safe_speed / 120.0) * 100)
@@ -583,27 +576,32 @@ class ADASPipeline:
             # Send motor signals asynchronously to ESP32 with rate limiting
             if esp32_ip:
                 current_sent_time = time.time()
-                if (not hasattr(self, "_last_sent_time") or 
-                    current_sent_time - self._last_sent_time > 0.08 or 
-                    getattr(self, "_last_sent_speed", None) != speed or 
-                    getattr(self, "_last_sent_turn", None) != turn):
+                is_stopped_now = (speed == 0 and turn == 0)
+                was_stopped_before = (getattr(self, "_last_sent_speed", 0) == 0 and getattr(self, "_last_sent_turn", 0) == 0)
+                should_send = not (is_stopped_now and was_stopped_before)
+                
+                if should_send:
+                    time_elapsed = current_sent_time - getattr(self, "_last_sent_time", 0.0)
+                    value_changed = (getattr(self, "_last_sent_speed", None) != speed or 
+                                     getattr(self, "_last_sent_turn", None) != turn)
                     
-                    self._last_sent_time = current_sent_time
-                    self._last_sent_speed = speed
-                    self._last_sent_turn = turn
-                    
-                    def send_esp32_control(ip, s, t):
-                        import esp32_module
-                        esp32_module.send_motor_speed(ip, s, t, timeout=0.30)
-                    
-                    threading.Thread(
-                        target=send_esp32_control, 
-                        args=(esp32_ip, speed, turn), 
-                        daemon=True
-                    ).start()
+                    if not hasattr(self, "_last_sent_time") or value_changed or time_elapsed > 0.08:
+                        self._last_sent_time = current_sent_time
+                        self._last_sent_speed = speed
+                        self._last_sent_turn = turn
+                        
+                        def send_esp32_control(ip, s, t):
+                            import esp32_module
+                            esp32_module.send_motor_speed(ip, s, t, timeout=0.30)
+                        
+                        threading.Thread(
+                            target=send_esp32_control, 
+                            args=(esp32_ip, speed, turn), 
+                            daemon=True
+                        ).start()
 
         # ── Sensor HUD overlay drawn on the frame (live mode only) ───────────
-        if True:
+        if is_live and esp32_connected:
             h_frame, w_frame = annotated_frame.shape[:2]
             bar_h = 44
             bar_y = h_frame - bar_h
@@ -611,16 +609,13 @@ class ADASPipeline:
             overlay = annotated_frame.copy()
             cv2.rectangle(overlay, (0, bar_y), (w_frame, h_frame), (10, 10, 10), -1)
             cv2.addWeighted(overlay, 0.60, annotated_frame, 0.40, 0, annotated_frame)
-            import requests
 
-            response = requests.get("http://10.248.116.230/sensor").json()
-
-            left = float(response["left"])
-            center = float(response["center"])
-            right = float(response["right"])
-            print("left",left)
-            print("center",center)
-            print("right",right)
+            left = esp32_sensors["left"]
+            center = esp32_sensors["center"]
+            right = esp32_sensors["right"]
+            print("left", left)
+            print("center", center)
+            print("right", right)
             zones = [
                 ("LEFT", left, 0, 213),
                 ("CENTER", center, 213, 426),
@@ -757,8 +752,7 @@ class ADASPipeline:
         # ── 15. GPS + Road context (gated — every 10 s) ─────────────────────
         if (now - self.last_gps_time) > self.gps_interval_s:
             try:
-                # NEW: Use LiDAR-based road context instead of GPS simulator
-                self.cached_road_context = self.sensor_fusion.get_road_context_fusion()
+                self.cached_road_context = get_road_context(lat, lon)
             except Exception as exc:
                 print(f"[Pipeline] Road context error: {exc}")
                 self.cached_road_context = {
